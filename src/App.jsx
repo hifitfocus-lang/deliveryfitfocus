@@ -5,11 +5,12 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 // Apps Script Web App redirect dropping POST bodies (see dashboard notes).
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjae8ljZwXp3pdcxqV5B-MhiQc3PCwEAvf2MMYV29E0qMprWulUZwa4dlCpMZJ9tkc/exec";
 
-const FLAVORS = ["Choco Forest", "Milky Dew", "Pink Banana", "Mixed Berry"];
-
-// Fallback gym list used only if the sheet fetch hasn't resolved yet —
-// real list always comes from Apps Script once connected.
+// Fallback lists used only if the sheet fetch hasn't resolved yet —
+// the real lists always come live from Apps Script once connected, so a
+// flavor swap in the sheet (e.g. Milky Dew -> Red Velvet) or a gym change
+// shows up automatically without touching this file.
 const FALLBACK_GYMS = ["ARC Gym", "Mahabodhi Gym", "Asia Fitness Center", "RPM Solo Baru", "RPM Manahan", "GMP Gentan"];
+const FALLBACK_FLAVORS = ["Choco Forest", "Red Velvet", "Pink Banana", "Mixed Berry"];
 
 async function callAppsScript(payload) {
   const params = new URLSearchParams();
@@ -284,10 +285,10 @@ function NumberField({ label, value, onChange, color, icon }) {
 }
 
 // ── GYM FORM ──────────────────────────────────────────────────────────────────
-function GymFormScreen({ gym, initialData, onBack, onReviewSubmit }) {
+function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
   const [values, setValues] = useState(() => {
     const init = {};
-    FLAVORS.forEach(f => {
+    flavors.forEach(f => {
       init[f] = initialData?.[f] || { stock: "", waste: "" };
     });
     return init;
@@ -297,7 +298,7 @@ function GymFormScreen({ gym, initialData, onBack, onReviewSubmit }) {
     setValues(prev => ({ ...prev, [flavor]: { ...prev[flavor], [field]: val } }));
   };
 
-  const filledCount = FLAVORS.filter(f => values[f].stock !== "" || values[f].waste !== "").length;
+  const filledCount = flavors.filter(f => values[f].stock !== "" || values[f].waste !== "").length;
   const canReview = filledCount > 0;
 
   return (
@@ -338,7 +339,7 @@ function GymFormScreen({ gym, initialData, onBack, onReviewSubmit }) {
 
       {/* Flavor cards */}
       <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-        {FLAVORS.map((flavor) => {
+        {flavors.map((flavor) => {
           const filled = values[flavor].stock !== "" || values[flavor].waste !== "";
           return (
             <div key={flavor} style={{
@@ -374,7 +375,7 @@ function GymFormScreen({ gym, initialData, onBack, onReviewSubmit }) {
         backdropFilter: "blur(6px)",
       }}>
         <div style={{ fontSize: 12, color: C.mute, textAlign: "center", marginBottom: 10 }}>
-          {filledCount} dari {FLAVORS.length} rasa terisi
+          {filledCount} dari {flavors.length} rasa terisi
         </div>
         <button
           onClick={() => canReview && onReviewSubmit(gym, values)}
@@ -394,8 +395,8 @@ function GymFormScreen({ gym, initialData, onBack, onReviewSubmit }) {
 }
 
 // ── CONFIRM POPUP ─────────────────────────────────────────────────────────────
-function ConfirmModal({ gym, values, onCancel, onConfirm, submitting }) {
-  const rows = FLAVORS
+function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting }) {
+  const rows = flavors
     .filter(f => values[f].stock !== "" || values[f].waste !== "")
     .map(f => ({ flavor: f, stock: values[f].stock || "0", waste: values[f].waste || "0" }));
 
@@ -494,6 +495,7 @@ export default function App() {
   const [loginError, setLoginError] = useState("");
 
   const [gyms, setGyms] = useState(FALLBACK_GYMS);
+  const [flavors, setFlavors] = useState(FALLBACK_FLAVORS);
   const [syncStatus, setSyncStatus] = useState("");
 
   // screen: "tray" | "form" | gym name string when in confirm
@@ -523,6 +525,18 @@ export default function App() {
     }
   }, []);
 
+  const loadFlavorList = useCallback(async (token) => {
+    try {
+      const data = await callAppsScript({ action: "getFlavorList", token });
+      if (data.ok && Array.isArray(data.flavors) && data.flavors.length) {
+        setFlavors(data.flavors);
+      }
+      // silent fallback on failure — driver still works with FALLBACK_FLAVORS
+    } catch {
+      // silent — same fallback behavior as loadGymList
+    }
+  }, []);
+
   const loadCompletedToday = useCallback(async (token) => {
     // Resets naturally: this always asks the backend for "today" (todayKey()),
     // so a new day returns an empty set with zero client-side logic needed.
@@ -545,6 +559,7 @@ export default function App() {
         setAuthToken(data.token);
         setDriverName(data.driverName || "");
         loadGymList(data.token);
+        loadFlavorList(data.token);
         loadCompletedToday(data.token);
       } else {
         setLoginError(data.error || "PIN salah, coba lagi");
@@ -554,7 +569,7 @@ export default function App() {
     } finally {
       setLoginLoading(false);
     }
-  }, [loadGymList, loadCompletedToday]);
+  }, [loadGymList, loadFlavorList, loadCompletedToday]);
 
   const handleLogout = () => {
     setAuthToken(null);
@@ -582,7 +597,7 @@ export default function App() {
       // this app just sends the raw numbers, the sheet-write logic (which
       // session to update) lives in Apps Script.
       const flavorPayload = {};
-      FLAVORS.forEach(f => {
+      flavors.forEach(f => {
         flavorPayload[f] = { stock: Number(pendingValues[f].stock) || 0, waste: Number(pendingValues[f].waste) || 0 };
       });
       await callAppsScript({
@@ -628,6 +643,7 @@ export default function App() {
       {screen === "form" && activeGym && (
         <GymFormScreen
           gym={activeGym}
+          flavors={flavors}
           initialData={savedValues[activeGym]}
           onBack={() => { setScreen("tray"); setActiveGym(null); }}
           onReviewSubmit={handleReviewSubmit}
@@ -636,6 +652,7 @@ export default function App() {
       {showConfirm && pendingValues && (
         <ConfirmModal
           gym={activeGym}
+          flavors={flavors}
           values={pendingValues}
           onCancel={() => setShowConfirm(false)}
           onConfirm={handleConfirmSend}
