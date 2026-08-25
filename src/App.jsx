@@ -1,8 +1,31 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import {
-  ChevronLeft, ChevronRight, LogOut, Plus, Minus, Check, X,
-  AlertTriangle, Loader2, WifiOff, Package, RotateCcw, Pencil, Delete,
-} from "lucide-react";
+
+// ── ICONS ──────────────────────────────────────────────────────────────────────
+// Self-contained inline icon set — no external icon package required, so this
+// file drops into any project without a new dependency to install.
+function makeIcon(paths) {
+  return function IconComp({ size = 16, color = "currentColor", strokeWidth = 2, className }) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
+        strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+        {paths}
+      </svg>
+    );
+  };
+}
+const ChevronLeft = makeIcon(<polyline points="15 18 9 12 15 6" />);
+const ChevronRight = makeIcon(<polyline points="9 18 15 12 9 6" />);
+const LogOut = makeIcon(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></>);
+const Plus = makeIcon(<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>);
+const Minus = makeIcon(<line x1="5" y1="12" x2="19" y2="12" />);
+const Check = makeIcon(<polyline points="20 6 9 17 4 12" />);
+const AlertTriangle = makeIcon(<><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>);
+const Loader2 = makeIcon(<path d="M21 12a9 9 0 1 1-6.219-8.56" />);
+const WifiOff = makeIcon(<><circle cx="12" cy="12" r="9" /><line x1="6" y1="6" x2="18" y2="18" /></>);
+const Package = makeIcon(<><rect x="4" y="7" width="16" height="13" rx="1.5" /><path d="M4 7l8-4 8 4" /><line x1="12" y1="7" x2="12" y2="20" /></>);
+const RotateCcw = makeIcon(<><path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 4 3 9 8 9" /></>);
+const Pencil = makeIcon(<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></>);
+const Delete = makeIcon(<><path d="M21 4H8l-6 8 6 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><line x1="12" y1="9" x2="18" y2="15" /><line x1="18" y1="9" x2="12" y2="15" /></>);
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // Same Apps Script backend as the main dashboard — GET-based due to the
@@ -806,7 +829,7 @@ export default function App() {
       } else {
         setLoginError(data.error || "PIN salah. Coba lagi.");
       }
-    } catch (err) {
+    } catch {
       setLoginError("Tidak dapat terhubung. Periksa koneksi internet, lalu coba lagi.");
     } finally {
       setLoginLoading(false);
