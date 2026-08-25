@@ -68,52 +68,69 @@ function gymInitials(g) {
 }
 
 // ── DESIGN TOKENS ──────────────────────────────────────────────────────────────
-// Redesigned for outdoor / direct-sunlight legibility: solid opaque
-// surfaces instead of frosted glass (glare washes out translucency),
-// heavier borders instead of hairlines, and a darker ink for higher
-// contrast ratios against white.
+// True "liquid glass" — layered translucency, soft specular highlight along
+// the top edge, saturated blur, and rounded, pill-like geometry. Driver works
+// indoors at the gym front desk, so legibility-under-glare isn't the
+// constraint here; the constraint is looking premium and feeling like iOS.
 const C = {
-  blue: "#0B4FDE",
-  blueBg: "#E9EFFF",
-  orange: "#C45500",
-  orangeBg: "#FFEFDF",
-  green: "#0B8A3D",
-  greenBg: "#E4F7EA",
-  red: "#C22A1E",
-  redBg: "#FDEAE8",
-  amber: "#8A5A00",
-  amberBg: "#FFF1D6",
-  ink: "#141416",
-  sub: "#46474C",
-  mute: "#6B6C72",
-  faint: "#8E8F94",
-  line: "#DADADF",
+  indigo: "#5E5CE6",
+  indigoDeep: "#4A48C4",
+  green: "#34C759",
+  greenBg: "rgba(52,199,89,0.14)",
+  orange: "#FF9500",
+  orangeBg: "rgba(255,149,0,0.14)",
+  blue: "#0A84FF",
+  blueBg: "rgba(10,132,255,0.14)",
+  red: "#FF3B30",
+  redBg: "rgba(255,59,48,0.12)",
+  amber: "#B25E00",
+  amberBg: "#FFF4E5",
+  ink: "#1D1D1F",
+  sub: "#6E6E73",
+  mute: "#8E8E93",
+  faint: "#AEAEB2",
+  line: "#E5E5EA",
   paper: "#FFFFFF",
-  bg: "#F0EFEC",
+  bg: "#F1F0F8",
 };
 
 const FONT = "-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text',system-ui,sans-serif";
-const safeTop = "max(18px, env(safe-area-inset-top))";
-const safeBottom = "max(20px, env(safe-area-inset-bottom))";
-// Opaque card — replaces the old blurred-glass surface everywhere so text
-// and numbers stay crisp under harsh outdoor light.
-const cardStyle = (border = C.line) => ({
-  background: C.paper,
-  border: `1.5px solid ${border}`,
-  boxShadow: "0 1px 0 rgba(20,20,22,0.02), 0 6px 16px rgba(20,20,22,0.07)",
+const bgGradient = "linear-gradient(160deg,#F1F0F8 0%,#F6F6FA 45%,#F3F8F4 100%)";
+const safeTop = "max(20px, env(safe-area-inset-top))";
+const safeBottom = "max(22px, env(safe-area-inset-bottom))";
+// Liquid-glass card: translucent, blurred, with a soft inner top-edge
+// highlight to sell the "glass catching light" look, and a border tinted by
+// the accent color rather than plain gray.
+const glass = (border = "rgba(255,255,255,0.6)") => ({
+  background: "rgba(255,255,255,0.68)",
+  backdropFilter: "blur(26px) saturate(190%)",
+  WebkitBackdropFilter: "blur(26px) saturate(190%)",
+  border: `1px solid ${border}`,
+  // Two-tone: a warm, soft shadow beneath (as if light falls from above) and
+  // a cool inner rim-light along the top edge (as if the glass itself catches it).
+  boxShadow: "0 1px 2px rgba(20,20,30,0.05), 0 14px 30px -10px rgba(94,92,230,0.16), 10px 14px 32px rgba(130,130,170,0.14), -6px -8px 20px rgba(255,255,255,0.65), inset 0 1.5px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25)",
 });
+// Kept as an alias so the rest of the file reads the same as the glass era.
+const cardStyle = glass;
 
 // ── GLOBAL STYLES ──────────────────────────────────────────────────────────────
 function GlobalStyles() {
   return (
     <style>{`
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-      html, body { background: ${C.bg}; overflow-x: hidden; }
+      html, body { background: #F1F0F8; overflow-x: hidden; }
       @keyframes ffPop { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
       @keyframes ffRise { 0% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
       @keyframes ffShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
       @keyframes ffSpin { to { transform: rotate(360deg); } }
       @keyframes ffFade { 0% { opacity: 0; } 100% { opacity: 1; } }
+      @keyframes ffScreenInFwd { 0% { opacity: 0; transform: translateY(18px) scale(0.985); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes ffScreenInBack { 0% { opacity: 0; transform: translateY(-10px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes ffCheckBounce { 0% { transform: scale(0); } 55% { transform: scale(1.18); } 75% { transform: scale(0.92); } 100% { transform: scale(1); } }
+      @keyframes ffConfetti { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; } }
+      .ff-screen-fwd { animation: ffScreenInFwd 0.38s cubic-bezier(0.22,1,0.36,1) both; }
+      .ff-screen-back { animation: ffScreenInBack 0.32s cubic-bezier(0.22,1,0.36,1) both; }
+      .ff-confetti { animation: ffConfetti 0.7s cubic-bezier(0.22,1,0.36,1) both; }
       .ff-btn { transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
       .ff-btn:active { transform: scale(0.96); }
       .ff-card { transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
@@ -122,7 +139,7 @@ function GlobalStyles() {
       .ff-shake { animation: ffShake 0.4s ease; }
       button, input { font-family: inherit; }
       button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
-        outline: 3px solid ${C.blue};
+        outline: 2.5px solid ${C.indigo};
         outline-offset: 2px;
       }
       @media (prefers-reduced-motion: reduce) {
@@ -144,7 +161,7 @@ function LogoMark({ size = 72 }) {
       {!err ? (
         <img src="/logo.png" alt="FitFocus" onError={() => setErr(true)} style={{ width: "180%", height: "180%", objectFit: "contain" }} />
       ) : (
-        <span style={{ color: C.blue, fontSize: size * 0.38, fontWeight: 800, letterSpacing: "-0.03em" }}>FF</span>
+        <span style={{ color: C.indigo, fontSize: size * 0.38, fontWeight: 700, letterSpacing: "-0.03em" }}>FF</span>
       )}
     </div>
   );
@@ -152,12 +169,12 @@ function LogoMark({ size = 72 }) {
 
 // ── REUSABLE ALERT MODAL ───────────────────────────────────────────────────────
 function AlertModal({ icon: Icon, tone = "danger", title, body, cancelLabel = "Batal", confirmLabel, onCancel, onConfirm, busy }) {
-  const toneColor = tone === "danger" ? C.red : C.blue;
-  const toneBg = tone === "danger" ? C.redBg : C.blueBg;
+  const toneColor = tone === "danger" ? C.red : C.indigo;
+  const toneBg = tone === "danger" ? C.redBg : "rgba(94,92,230,0.14)";
   return (
     <div role="dialog" aria-modal="true" style={{
-      position: "fixed", inset: 0, background: "rgba(15,15,17,0.6)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 22,
+      position: "fixed", inset: 0, background: "rgba(20,20,24,0.5)", backdropFilter: "blur(4px)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 24,
       fontFamily: FONT, animation: "ffFade 0.15s ease",
     }}>
       <div style={{ background: C.paper, borderRadius: 24, padding: "28px 22px", width: "100%", maxWidth: 340, textAlign: "center", animation: "ffPop 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: "0 20px 50px rgba(0,0,0,0.3)" }}>
@@ -204,28 +221,31 @@ function LoginScreen({ onSubmit, loading, error }) {
   const backspace = () => setPin(pin.slice(0, -1));
 
   const keyBtnStyle = {
-    aspectRatio: "1", borderRadius: 18, border: `1.5px solid ${C.line}`,
-    background: C.paper, fontSize: 27, fontWeight: 700, color: C.ink,
-    cursor: "pointer", boxShadow: "0 2px 6px rgba(20,20,22,0.06)",
+    aspectRatio: "1", borderRadius: 20, border: "1px solid rgba(0,0,0,0.06)",
+    background: "rgba(255,255,255,0.82)", fontSize: 25, fontWeight: 600, color: C.ink,
+    cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
   };
 
   return (
     <div style={{
-      minHeight: "100vh", position: "relative", background: C.bg,
+      minHeight: "100vh", position: "relative", background: bgGradient,
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      padding: 22, fontFamily: FONT, letterSpacing: "-0.01em", overflowX: "hidden",
+      padding: 24, fontFamily: FONT, letterSpacing: "-0.01em", overflow: "hidden",
     }}>
-      <div style={{ position: "relative", ...cardStyle(), borderRadius: 30, padding: "38px 26px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", animation: "ffRise 0.35s ease" }}>
-        <LogoMark size={76} />
-        <h1 style={{ color: C.ink, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", margin: "10px 0 2px" }}>FitFocus Driver</h1>
-        <p style={{ color: C.mute, fontSize: 14, margin: "0 0 26px" }}>Masukkan PIN 4 digit untuk masuk</p>
+      <div style={{ position: "fixed", top: "-15%", left: "-12%", width: 420, height: 420, borderRadius: "50%", background: C.indigo, opacity: 0.18, filter: "blur(100px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-10%", right: "-12%", width: 400, height: 400, borderRadius: "50%", background: C.green, opacity: 0.14, filter: "blur(110px)", pointerEvents: "none" }} />
+
+      <div style={{ position: "relative", ...cardStyle("rgba(255,255,255,0.6)"), borderRadius: 32, padding: "40px 28px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", animation: "ffRise 0.35s ease" }}>
+        <LogoMark size={80} />
+        <h1 style={{ color: C.ink, fontSize: 21, fontWeight: 800, letterSpacing: "-0.02em", margin: "10px 0 2px" }}>FitFocus Driver</h1>
+        <p style={{ color: C.mute, fontSize: 13, margin: "0 0 28px" }}>Masukkan PIN 4 digit untuk masuk</p>
 
         <div className={error ? "ff-shake" : ""} style={{ display: "flex", gap: 16, marginBottom: 26 }}>
           {[0, 1, 2, 3].map(i => (
             <div key={i} style={{
               width: 20, height: 20, borderRadius: "50%",
-              background: i < pin.length ? C.blue : "transparent",
-              border: `2.5px solid ${i < pin.length ? C.blue : C.line}`,
+              background: i < pin.length ? C.indigo : "transparent",
+              border: `2.5px solid ${i < pin.length ? C.indigo : C.line}`,
               transition: "all 0.15s",
             }} />
           ))}
@@ -250,11 +270,12 @@ function LoginScreen({ onSubmit, loading, error }) {
           style={{
             width: "100%", padding: "16px 16px", borderRadius: 16, border: "none",
             cursor: pin.length === 4 && !loading ? "pointer" : "default",
-            background: pin.length === 4 ? C.blue : "#C7C7CC",
-            color: "#fff", fontSize: 17, fontWeight: 700,
+            background: pin.length === 4 ? C.indigo : "#D1D1D6",
+            color: "#fff", fontSize: 16, fontWeight: 700,
+            boxShadow: pin.length === 4 ? "0 4px 16px rgba(94,92,230,0.35)" : "none",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-          {loading ? (<><Loader2 size={19} className="ff-spin" /> Memproses...</>) : "Masuk"}
+          {loading ? (<><Loader2 size={18} className="ff-spin" /> Memproses...</>) : "Masuk"}
         </button>
 
         {error && (
@@ -267,23 +288,79 @@ function LoginScreen({ onSubmit, loading, error }) {
   );
 }
 
-// ── TRAY (GYM GRID) ───────────────────────────────────────────────────────────
-function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, syncStatus, sessionTotals }) {
+// ── ANIMATED PROGRESS ──────────────────────────────────────────────────────────
+// Counts a number up/down smoothly instead of snapping, so the header stat
+// feels alive when a gym gets marked done.
+function useCountUp(target, duration = 500) {
+  const [display, setDisplay] = useState(target);
+  const fromRef = useRef(target);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === target) return;
+    const start = performance.now();
+    let raf;
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplay(Math.round(from + (target - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else fromRef.current = target;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return display;
+}
+
+// SVG ring so the fill can genuinely animate (stroke-dashoffset transition)
+// rather than snapping like a CSS conic-gradient would.
+function ProgressRing({ percent, color, size = 58, stroke = 6 }) {
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const animatedPercent = useCountUp(percent, 550);
+  const offset = circumference - (animatedPercent / 100) * circumference;
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E5EA" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+          strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.55s cubic-bezier(0.22,1,0.36,1), stroke 0.3s ease" }}
+        />
+      </svg>
+      <div style={{
+        position: "absolute", inset: 6, borderRadius: "50%", background: "#fff",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 13.5, fontWeight: 800, color, fontVariantNumeric: "tabular-nums",
+        boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04)",
+      }}>{animatedPercent}%</div>
+    </div>
+  );
+}
+
+
+function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, syncStatus, sessionTotals, navClass = "" }) {
   const doneCount = gyms.filter(g => completedToday.has(g)).length;
   const allDone = doneCount === gyms.length && gyms.length > 0;
   const remaining = gyms.length - doneCount;
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const animatedStock = useCountUp(sessionTotals.stock, 500);
+  const animatedWaste = useCountUp(sessionTotals.waste, 500);
 
   const todoGyms = gyms.filter(g => !completedToday.has(g));
   const doneGyms = gyms.filter(g => completedToday.has(g));
 
   return (
-    <div style={{
-      minHeight: "100vh", background: C.bg,
+    <div className={navClass} style={{
+      minHeight: "100vh", position: "relative", background: bgGradient,
       fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 40, overflowX: "hidden",
     }}>
+      <div style={{ position: "fixed", top: "-12%", left: "-10%", width: 380, height: 380, borderRadius: "50%", background: C.indigo, opacity: 0.14, filter: "blur(100px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-8%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.green, opacity: 0.12, filter: "blur(100px)", pointerEvents: "none" }} />
+
       {/* Header */}
-      <div style={{ padding: `${safeTop} 18px 16px` }}>
+      <div style={{ position: "relative", padding: `${safeTop} 18px 16px` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <LogoMark size={44} />
@@ -295,10 +372,10 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             </div>
           </div>
           <button className="ff-btn" onClick={() => setConfirmingLogout(true)} aria-label="Keluar" style={{
-            width: 44, height: 44, borderRadius: 14, border: `1.5px solid ${C.line}`,
-            background: C.paper, color: C.sub, cursor: "pointer", flexShrink: 0,
+            width: 40, height: 40, borderRadius: 13, border: "1px solid rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.65)", color: C.sub, cursor: "pointer", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-          }}><LogOut size={18} strokeWidth={2} /></button>
+          }}><LogOut size={17} strokeWidth={2} /></button>
         </div>
 
         {syncStatus && (
@@ -314,7 +391,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
       {/* Progress banner */}
       <div style={{ padding: "0 18px 14px" }}>
         <div style={{
-          ...cardStyle(allDone ? C.green : C.blue),
+          ...cardStyle(allDone ? C.green + "44" : C.indigo + "33"),
           borderRadius: 20, padding: "18px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ minWidth: 0 }}>
@@ -327,15 +404,10 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
               <div style={{ fontSize: 12.5, color: C.mute, marginTop: 2 }}>{doneCount} dari {gyms.length} gym sudah dikirim</div>
             )}
           </div>
-          <div style={{
-            width: 58, height: 58, borderRadius: "50%",
-            background: `conic-gradient(${allDone ? C.green : C.blue} ${gyms.length ? (doneCount / gyms.length) * 360 : 0}deg, #E5E5EA 0deg)`,
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}>
-            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, fontWeight: 800, color: allDone ? C.green : C.blue, fontVariantNumeric: "tabular-nums" }}>
-              {gyms.length ? Math.round((doneCount / gyms.length) * 100) : 0}%
-            </div>
-          </div>
+          <ProgressRing
+            percent={gyms.length ? Math.round((doneCount / gyms.length) * 100) : 0}
+            color={allDone ? C.green : C.indigo}
+          />
         </div>
       </div>
 
@@ -346,19 +418,19 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             TERKIRIM SESI INI
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div style={{ ...cardStyle(C.blue), borderRadius: 18, padding: "14px 16px" }}>
+            <div style={{ ...cardStyle(C.blue + "26"), borderRadius: 18, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <Package size={14} color={C.blue} strokeWidth={2.25} />
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: C.blue, letterSpacing: 0.3 }}>STOK</span>
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{sessionTotals.stock}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{animatedStock}</div>
             </div>
-            <div style={{ ...cardStyle(C.orange), borderRadius: 18, padding: "14px 16px" }}>
+            <div style={{ ...cardStyle(C.orange + "26"), borderRadius: 18, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <RotateCcw size={14} color={C.orange} strokeWidth={2.25} />
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: C.orange, letterSpacing: 0.3 }}>SISA</span>
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{sessionTotals.waste}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{animatedWaste}</div>
             </div>
           </div>
         </div>
@@ -418,7 +490,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                 className="ff-card"
                 onClick={() => onSelectGym(gym)}
                 style={{
-                  ...cardStyle(C.green), background: C.greenBg,
+                  ...cardStyle(C.green + "33"), background: C.greenBg,
                   borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12,
                   cursor: "pointer", textAlign: "left", minWidth: 0,
                 }}>
@@ -483,8 +555,8 @@ function NumberField({ label, value, onChange, color, colorBg, icon: Icon }) {
             width: "100%", boxSizing: "border-box", textAlign: "center",
             fontSize: 34, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums",
             padding: "16px 44px", borderRadius: 16,
-            border: `2.5px solid ${filled ? color : C.line}`,
-            background: filled ? colorBg : C.paper,
+            border: `2px solid ${filled ? color : "rgba(0,0,0,0.08)"}`,
+            background: filled ? colorBg : "rgba(255,255,255,0.7)",
             outline: "none",
           }}
         />
@@ -506,7 +578,7 @@ function NumberField({ label, value, onChange, color, colorBg, icon: Icon }) {
 }
 
 // ── GYM FORM ──────────────────────────────────────────────────────────────────
-function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
+function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navClass = "" }) {
   const [values, setValues] = useState(() => {
     const init = {};
     flavors.forEach(f => {
@@ -529,19 +601,21 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh", background: C.bg,
+    <div className={navClass} style={{
+      minHeight: "100vh", position: "relative", background: bgGradient,
       fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 140, overflowX: "hidden",
     }}>
+      <div style={{ position: "fixed", top: "-12%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.indigo, opacity: 0.13, filter: "blur(100px)", pointerEvents: "none" }} />
+
       {/* Header */}
-      <div style={{ padding: `${safeTop} 18px 16px`, display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ position: "relative", padding: `${safeTop} 18px 16px`, display: "flex", alignItems: "center", gap: 14 }}>
         <button
           className="ff-btn" onClick={handleBack} aria-label="Kembali"
           style={{
-            width: 44, height: 44, borderRadius: 14, border: `1.5px solid ${C.line}`,
-            background: C.paper, color: C.ink, cursor: "pointer", flexShrink: 0,
+            width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.7)", color: C.ink, cursor: "pointer", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-          }}><ChevronLeft size={20} strokeWidth={2.5} /></button>
+          }}><ChevronLeft size={20} strokeWidth={2.25} /></button>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11.5, color: C.mute, fontWeight: 700, letterSpacing: 0.4 }}>ISI DATA</div>
           <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gymShortName(gym)}</div>
@@ -579,7 +653,7 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
           const filled = values[flavor].stock !== "" || values[flavor].waste !== "";
           return (
             <div key={flavor} style={{
-              ...cardStyle(filled ? C.blue : C.line),
+              ...cardStyle(filled ? C.indigo + "44" : "rgba(0,0,0,0.06)"),
               borderRadius: 20, padding: 18,
             }}>
               <div style={{ fontSize: 16.5, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{flavor}</div>
@@ -595,7 +669,8 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
       {/* Sticky bottom CTA */}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, padding: `16px 18px ${safeBottom}`,
-        background: "linear-gradient(0deg, rgba(240,239,236,1) 65%, rgba(240,239,236,0))",
+        background: "linear-gradient(0deg, rgba(243,243,247,0.98) 60%, rgba(243,243,247,0))",
+        backdropFilter: "blur(6px)",
       }}>
         <div style={{ fontSize: 12.5, color: C.mute, textAlign: "center", marginBottom: 10, fontWeight: 600 }}>
           {filledCount} dari {flavors.length} rasa terisi
@@ -607,9 +682,9 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
           style={{
             width: "100%", padding: "18px 16px", borderRadius: 18, border: "none",
             cursor: canReview ? "pointer" : "default",
-            background: canReview ? C.blue : "#C7C7CC",
+            background: canReview ? C.indigo : "#D1D1D6",
             color: "#fff", fontSize: 17, fontWeight: 700,
-            boxShadow: canReview ? "0 8px 22px rgba(11,79,222,0.32)" : "none",
+            boxShadow: canReview ? "0 6px 20px rgba(94,92,230,0.35)" : "none",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
           Periksa & Kirim <ChevronRight size={19} strokeWidth={2.5} />
@@ -634,19 +709,21 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
 
 // ── CONFIRM POPUP ─────────────────────────────────────────────────────────────
 function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting }) {
-  const rows = flavors
-    .filter(f => values[f].stock !== "" || values[f].waste !== "")
-    .map(f => ({ flavor: f, stock: values[f].stock || "0", waste: values[f].waste || "0" }));
+  const rows = flavors.map(f => {
+    const touched = values[f].stock !== "" || values[f].waste !== "";
+    return { flavor: f, stock: values[f].stock || "0", waste: values[f].waste || "0", touched };
+  });
+  const untouchedCount = rows.filter(r => !r.touched).length;
 
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(15,15,17,0.6)",
+      position: "fixed", inset: 0, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100, fontFamily: FONT,
     }}>
       <div style={{
         width: "100%", maxWidth: 480, background: C.paper, borderRadius: "28px 28px 0 0",
-        padding: `26px 20px calc(${safeBottom} + 8px)`, boxShadow: "0 -10px 40px rgba(0,0,0,0.25)",
-        maxHeight: "80vh", overflowY: "auto", animation: "ffRise 0.25s ease", boxSizing: "border-box",
+        padding: `26px 20px calc(${safeBottom} + 8px)`, boxShadow: "0 -18px 50px rgba(20,20,30,0.28), 0 -1px 0 rgba(255,255,255,0.9) inset",
+        maxHeight: "84vh", overflowY: "auto", animation: "ffRise 0.28s cubic-bezier(0.34,1.2,0.4,1)", boxSizing: "border-box",
       }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
 
@@ -654,25 +731,45 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
           <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5 }}>KONFIRMASI</div>
           <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, marginTop: 2 }}>{gymShortName(gym)}</div>
         </div>
-        <p style={{ textAlign: "center", color: C.sub, fontSize: 13.5, margin: "6px 0 20px" }}>
+        <p style={{ textAlign: "center", color: C.sub, fontSize: 13.5, margin: "6px 0 16px" }}>
           Cek lagi sebelum kirim. Pastikan semua angka sudah benar.
         </p>
+
+        {untouchedCount > 0 && (
+          <div style={{
+            display: "flex", alignItems: "flex-start", gap: 9, background: C.amberBg, color: C.amber,
+            borderRadius: 14, padding: "11px 14px", marginBottom: 16, fontSize: 12.5, fontWeight: 600, lineHeight: 1.4,
+          }}>
+            <AlertTriangle size={16} strokeWidth={2.25} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>
+              {untouchedCount} rasa belum kamu isi ({rows.filter(r => !r.touched).map(r => r.flavor).join(", ")}) —
+              akan dikirim sebagai <b>0</b>. Pastikan itu benar sebelum lanjut.
+            </span>
+          </div>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {rows.map(r => (
             <div key={r.flavor} style={{
-              background: C.bg, borderRadius: 16, padding: "14px 16px",
+              background: r.touched ? C.bg : "repeating-linear-gradient(135deg, #F4F4F7, #F4F4F7 8px, #EDEDF2 8px, #EDEDF2 16px)",
+              border: r.touched ? "1.5px solid transparent" : `1.5px dashed ${C.faint}`,
+              borderRadius: 16, padding: "14px 16px",
               display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
             }}>
-              <span style={{ fontSize: 14.5, fontWeight: 700, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.flavor}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: r.touched ? C.ink : C.mute, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.flavor}</span>
+                {!r.touched && (
+                  <span style={{ fontSize: 10, fontWeight: 800, color: C.amber, background: "#fff", padding: "3px 7px", borderRadius: 999, flexShrink: 0, letterSpacing: 0.3 }}>0</span>
+                )}
+              </div>
               <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 9.5, color: C.blue, fontWeight: 800, letterSpacing: 0.3 }}>STOK</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{r.stock}</div>
+                  <div style={{ fontSize: 9.5, color: r.touched ? C.blue : C.faint, fontWeight: 800, letterSpacing: 0.3 }}>STOK</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: r.touched ? C.ink : C.faint, fontVariantNumeric: "tabular-nums" }}>{r.stock}</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 9.5, color: C.orange, fontWeight: 800, letterSpacing: 0.3 }}>SISA</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{r.waste}</div>
+                  <div style={{ fontSize: 9.5, color: r.touched ? C.orange : C.faint, fontWeight: 800, letterSpacing: 0.3 }}>SISA</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: r.touched ? C.ink : C.faint, fontVariantNumeric: "tabular-nums" }}>{r.waste}</div>
                 </div>
               </div>
             </div>
@@ -706,7 +803,7 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
           <button className="ff-btn" onClick={onConfirm} disabled={submitting} style={{
             flex: 2, padding: "16px 16px", borderRadius: 16, border: "none",
             background: C.green, color: "#fff", fontSize: 15, fontWeight: 700, cursor: submitting ? "default" : "pointer",
-            boxShadow: "0 8px 22px rgba(11,138,61,0.32)", opacity: submitting ? 0.75 : 1,
+            boxShadow: "0 6px 20px rgba(52,199,89,0.35)", opacity: submitting ? 0.75 : 1,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
             {submitting ? (<><Loader2 size={16} className="ff-spin" /> Mengirim...</>) : (<><Check size={16} strokeWidth={2.5} /> Ya, Kirim Data</>)}
@@ -719,18 +816,43 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
 
 // ── SUCCESS OVERLAY ────────────────────────────────────────────────────────────
 function SuccessOverlay({ gym }) {
+  // Small fixed set of confetti dots, each with a random-ish outward
+  // direction baked in via CSS custom properties, staggered slightly.
+  const confetti = [
+    { color: C.indigo, dx: -70, dy: -46, delay: 0.05 },
+    { color: C.green, dx: 66, dy: -52, delay: 0.09 },
+    { color: C.orange, dx: -54, dy: 50, delay: 0.02 },
+    { color: C.blue, dx: 60, dy: 48, delay: 0.13 },
+    { color: C.indigo, dx: 0, dy: -74, delay: 0.16 },
+    { color: C.green, dx: 0, dy: 72, delay: 0.07 },
+  ];
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(15,15,17,0.45)",
+      position: "fixed", inset: 0, background: "rgba(20,20,24,0.35)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, fontFamily: FONT, padding: 20,
     }}>
       <div style={{
-        background: C.paper, borderRadius: 26, padding: "36px 36px", textAlign: "center",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "ffPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+        position: "relative", background: C.paper, borderRadius: 26, padding: "36px 36px", textAlign: "center",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "ffPop 0.32s cubic-bezier(0.34,1.56,0.64,1)",
       }}>
+        <div style={{ position: "absolute", left: "50%", top: 46, width: 0, height: 0, pointerEvents: "none" }}>
+          {confetti.map((c, i) => (
+            <span
+              key={i}
+              className="ff-confetti"
+              style={{
+                position: "absolute", width: 7, height: 7, borderRadius: i % 2 ? "50%" : 2,
+                background: c.color, left: 0, top: 0,
+                "--dx": `${c.dx}px`, "--dy": `${c.dy}px`,
+                animationDelay: `${c.delay}s`,
+              }}
+            />
+          ))}
+        </div>
         <div style={{
           width: 66, height: 66, borderRadius: "50%", background: C.green,
           display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+          animation: "ffCheckBounce 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s both",
         }}><Check size={32} strokeWidth={3} color="#fff" /></div>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.ink }}>{gymShortName(gym)} berhasil dikirim</div>
         <div style={{ fontSize: 13.5, color: C.mute, marginTop: 4 }}>Lanjut ke gym berikutnya</div>
@@ -751,6 +873,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState("");
 
   const [screen, setScreen] = useState("tray");
+  const [navDirection, setNavDirection] = useState("fwd"); // "fwd" entering a gym, "back" returning to tray
   const [activeGym, setActiveGym] = useState(null);
   const [pendingValues, setPendingValues] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -827,6 +950,7 @@ export default function App() {
 
   const handleSelectGym = (gym) => {
     setActiveGym(gym);
+    setNavDirection("fwd");
     setScreen("form");
   };
 
@@ -855,10 +979,11 @@ export default function App() {
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
+        setNavDirection("back");
         setScreen("tray");
         setActiveGym(null);
         setPendingValues(null);
-      }, 1200);
+      }, 1300);
     } catch (err) {
       alert("Gagal mengirim data. Coba lagi. " + (err?.message || err));
     } finally {
@@ -899,6 +1024,7 @@ export default function App() {
           onLogout={handleLogout}
           syncStatus={syncStatus}
           sessionTotals={sessionTotals}
+          navClass={navDirection === "back" ? "ff-screen-back" : ""}
         />
       )}
       {screen === "form" && activeGym && (
@@ -906,8 +1032,9 @@ export default function App() {
           gym={activeGym}
           flavors={flavors}
           initialData={savedValues[activeGym]}
-          onBack={() => { setScreen("tray"); setActiveGym(null); }}
+          onBack={() => { setNavDirection("back"); setScreen("tray"); setActiveGym(null); }}
           onReviewSubmit={handleReviewSubmit}
+          navClass="ff-screen-fwd"
         />
       )}
       {showConfirm && pendingValues && (
