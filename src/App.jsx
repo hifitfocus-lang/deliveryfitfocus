@@ -578,7 +578,7 @@ function NumberField({ label, value, onChange, color, colorBg, icon: Icon }) {
 }
 
 // ── GYM FORM ──────────────────────────────────────────────────────────────────
-function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navClass = "" }) {
+function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navClass = "", gymAccent = C.indigo }) {
   const [values, setValues] = useState(() => {
     const init = {};
     flavors.forEach(f => {
@@ -607,44 +607,39 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navC
     }}>
       <div style={{ position: "fixed", top: "-12%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.indigo, opacity: 0.13, filter: "blur(100px)", pointerEvents: "none" }} />
 
-      {/* Header */}
-      <div style={{ position: "relative", padding: `${safeTop} 18px 16px`, display: "flex", alignItems: "center", gap: 14 }}>
-        <button
-          className="ff-btn" onClick={handleBack} aria-label="Kembali"
-          style={{
-            width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
-            background: "rgba(255,255,255,0.7)", color: C.ink, cursor: "pointer", flexShrink: 0,
+      {/* Sticky hero header — the gym stays big, colored, and pinned in
+          view the whole time you're filling flavors, so a driver scrolling
+          through a long list never loses track of which gym they're on. */}
+      <div style={{
+        position: "sticky", top: 0, zIndex: 20,
+        background: "rgba(241,240,248,0.82)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        borderBottom: `1px solid rgba(255,255,255,0.5)`,
+        padding: `${safeTop} 18px 16px`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            className="ff-btn" onClick={handleBack} aria-label="Kembali"
+            style={{
+              width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
+              background: "rgba(255,255,255,0.75)", color: C.ink, cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}><ChevronLeft size={20} strokeWidth={2.25} /></button>
+
+          <div style={{
+            width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+            background: gymAccent, color: "#fff", fontSize: 17, fontWeight: 800, letterSpacing: 0.2,
             display: "flex", alignItems: "center", justifyContent: "center",
-          }}><ChevronLeft size={20} strokeWidth={2.25} /></button>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 11.5, color: C.mute, fontWeight: 700, letterSpacing: 0.4 }}>ISI DATA</div>
-          <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gymShortName(gym)}</div>
+            boxShadow: `0 6px 16px ${gymAccent}55`,
+          }}>{gymInitials(gym)}</div>
+
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: gymAccent, fontWeight: 800, letterSpacing: 0.6 }}>SEDANG ISI DATA</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gymShortName(gym)}</div>
+          </div>
         </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ padding: "0 18px 16px" }}>
-        <div style={{ ...cardStyle(), borderRadius: 18, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 8, background: C.blueBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-              <Package size={14} color={C.blue} strokeWidth={2.5} />
-            </div>
-            <div>
-              <span style={{ fontSize: 13.5, fontWeight: 800, color: C.ink }}>Stok</span>
-              <span style={{ fontSize: 13, color: C.sub }}> — botol baru yang dikirim hari ini</span>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 8, background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-              <RotateCcw size={14} color={C.orange} strokeWidth={2.5} />
-            </div>
-            <div>
-              <span style={{ fontSize: 13.5, fontWeight: 800, color: C.ink }}>Sisa</span>
-              <span style={{ fontSize: 13, color: C.sub }}> — botol dari sesi sebelumnya yang diambil kembali</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div style={{ height: 16 }} />
 
       {/* Flavor cards — Stok and Sisa stacked full-width so nothing can
           ever overflow the viewport, and each field gets a large tap target. */}
@@ -1035,6 +1030,7 @@ export default function App() {
           onBack={() => { setNavDirection("back"); setScreen("tray"); setActiveGym(null); }}
           onReviewSubmit={handleReviewSubmit}
           navClass="ff-screen-fwd"
+          gymAccent={accentFor(gyms.indexOf(activeGym))}
         />
       )}
       {showConfirm && pendingValues && (
