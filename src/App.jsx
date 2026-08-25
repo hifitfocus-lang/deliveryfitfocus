@@ -32,6 +32,26 @@ function todayLabel() {
 function gymShortName(g) {
   return String(g).replace(/\s*(GYM|Gym|FITNESS CENTER|Fitness Center)\b/g, "").trim() || g;
 }
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 10) return "Selamat pagi";
+  if (h < 15) return "Selamat siang";
+  if (h < 18) return "Selamat sore";
+  return "Selamat malam";
+}
+// Rotating accent color + icon per gym card — purely visual variety so the
+// grid doesn't read as one flat wall of identical white cards.
+const CARD_ACCENTS = [
+  { color: "#5E5CE6", icon: "🏋️" },
+  { color: "#0A84FF", icon: "💪" },
+  { color: "#FF9500", icon: "⚡" },
+  { color: "#AF52DE", icon: "🔥" },
+  { color: "#34C759", icon: "🏃" },
+  { color: "#FF375F", icon: "✨" },
+];
+function accentFor(index) {
+  return CARD_ACCENTS[index % CARD_ACCENTS.length];
+}
 
 // ── DESIGN TOKENS (matched to main dashboard) ─────────────────────────────────
 const C = {
@@ -167,7 +187,11 @@ function LoginScreen({ onSubmit, loading, error }) {
 function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, syncStatus }) {
   const doneCount = gyms.filter(g => completedToday.has(g)).length;
   const allDone = doneCount === gyms.length && gyms.length > 0;
+  const remaining = gyms.length - doneCount;
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+
+  const todoGyms = gyms.filter(g => !completedToday.has(g));
+  const doneGyms = gyms.filter(g => completedToday.has(g));
 
   return (
     <div style={{
@@ -179,82 +203,125 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
       <div style={{ position: "fixed", bottom: "-8%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.green, opacity: 0.12, filter: "blur(100px)", pointerEvents: "none" }} />
 
       {/* Header */}
-      <div style={{ position: "relative", padding: "24px 20px 18px", textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-          <div style={{ width: 44 }} />
-          <LogoMark size={52} />
+      <div style={{ position: "relative", padding: "24px 20px 18px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LogoMark size={44} />
+            <div>
+              <div style={{ color: C.ink, fontSize: 16, fontWeight: 800, lineHeight: 1.15 }}>
+                {greeting()}{driverName ? `, ${driverName.split(" ")[0]}` : ""} 👋
+              </div>
+              <div style={{ color: C.mute, fontSize: 12, marginTop: 1 }}>{todayLabel()}</div>
+            </div>
+          </div>
           <button onClick={() => setConfirmingLogout(true)} style={{
-            width: 44, height: 44, borderRadius: 14, border: "1px solid rgba(0,0,0,0.06)",
+            width: 40, height: 40, borderRadius: 13, border: "1px solid rgba(0,0,0,0.06)",
             background: "rgba(255,255,255,0.6)", color: C.mute, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", fontFamily: "inherit",
+            cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
           }}>Out</button>
         </div>
-        <div style={{ color: C.ink, fontSize: 15, fontWeight: 700, marginTop: 6 }}>{todayLabel()}</div>
-        {driverName && <div style={{ color: C.mute, fontSize: 12, marginTop: 2 }}>{driverName}</div>}
       </div>
 
       {/* Progress banner */}
-      <div style={{ padding: "0 20px 18px" }}>
+      <div style={{ padding: "0 20px 22px" }}>
         <div style={{
           ...glass, border: `1px solid ${allDone ? C.green + "44" : C.indigo + "33"}`,
-          borderRadius: 20, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
+          borderRadius: 22, padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div>
-            <div style={{ fontSize: 12, color: C.mute, fontWeight: 600, marginBottom: 3 }}>PROGRESS TODAY</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: allDone ? C.green : C.ink }}>
-              {doneCount} / {gyms.length} gym {allDone ? "— done! 🎉" : "selesai"}
+            <div style={{ fontSize: 12, color: C.mute, fontWeight: 600, marginBottom: 4 }}>PROGRESS HARI INI</div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: allDone ? C.green : C.ink }}>
+              {allDone
+                ? "Semua gym beres! 🎉"
+                : `${remaining} gym lagi tersisa`}
             </div>
+            {!allDone && (
+              <div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>{doneCount} dari {gyms.length} sudah dikirim</div>
+            )}
           </div>
           <div style={{
-            width: 52, height: 52, borderRadius: "50%",
+            width: 56, height: 56, borderRadius: "50%",
             background: `conic-gradient(${allDone ? C.green : C.indigo} ${gyms.length ? (doneCount / gyms.length) * 360 : 0}deg, #E5E5EA 0deg)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: allDone ? C.green : C.indigo }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: allDone ? C.green : C.indigo }}>
               {gyms.length ? Math.round((doneCount / gyms.length) * 100) : 0}%
             </div>
           </div>
         </div>
       </div>
 
-      {/* Gym tray grid */}
-      <div style={{ padding: "0 20px" }}>
-        <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
-          TAP A GYM TO START
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
-          {gyms.map((gym) => {
-            const done = completedToday.has(gym);
-            return (
-              <button
-                key={gym}
-                onClick={() => onSelectGym(gym)}
-                style={{
-                  position: "relative", ...glass,
-                  border: `1.5px solid ${done ? C.green + "55" : "rgba(0,0,0,0.06)"}`,
-                  borderRadius: 22, padding: "22px 14px", minHeight: 108,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", fontFamily: "inherit", textAlign: "center",
-                  background: done ? "rgba(52,199,89,0.08)" : glass.background,
-                }}>
-                {done && (
+      {/* Belum diisi — primary focus */}
+      {todoGyms.length > 0 && (
+        <div style={{ padding: "0 20px 24px" }}>
+          <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
+            BELUM DIISI · {todoGyms.length}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
+            {todoGyms.map((gym) => {
+              const idx = gyms.indexOf(gym);
+              const accent = accentFor(idx);
+              return (
+                <button
+                  key={gym}
+                  className="ff-card"
+                  onClick={() => onSelectGym(gym)}
+                  style={{
+                    position: "relative", ...glass,
+                    border: "1.5px solid rgba(0,0,0,0.06)",
+                    borderTop: `3px solid ${accent.color}`,
+                    borderRadius: 22, padding: "20px 14px 18px", minHeight: 116,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", fontFamily: "inherit", textAlign: "center",
+                    animation: "ffPop 0.3s ease backwards", animationDelay: `${idx * 0.04}s`,
+                  }}>
                   <div style={{
-                    position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%",
-                    background: C.green, color: "#fff", fontSize: 12, fontWeight: 900,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>✓</div>
-                )}
-                <div style={{ fontSize: 15, fontWeight: 700, color: done ? C.green : C.ink, lineHeight: 1.25 }}>
-                  {gymShortName(gym)}
-                </div>
-                <div style={{ fontSize: 11, color: done ? C.green + "99" : C.faint, marginTop: 4 }}>
-                  {done ? "Sudah diisi · ketuk untuk edit" : "Belum diisi"}
-                </div>
-              </button>
-            );
-          })}
+                    width: 34, height: 34, borderRadius: 11, background: accent.color + "18",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, marginBottom: 8,
+                  }}>{accent.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.25 }}>
+                    {gymShortName(gym)}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.faint, marginTop: 3 }}>Ketuk untuk isi →</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Sudah diisi — secondary, compact */}
+      {doneGyms.length > 0 && (
+        <div style={{ padding: "0 20px" }}>
+          <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
+            SUDAH DIISI · {doneGyms.length}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {doneGyms.map((gym) => {
+              const idx = gyms.indexOf(gym);
+              const accent = accentFor(idx);
+              return (
+                <button
+                  key={gym}
+                  className="ff-card"
+                  onClick={() => onSelectGym(gym)}
+                  style={{
+                    ...glass, border: `1px solid ${C.green}33`, background: "rgba(52,199,89,0.06)",
+                    borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12,
+                    cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                  }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: "50%", background: C.green, color: "#fff",
+                    fontSize: 13, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>✓</div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: C.ink, flex: 1 }}>{gymShortName(gym)}</span>
+                  <span style={{ fontSize: 11, color: C.green, fontWeight: 600 }}>Edit</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {syncStatus && (
         <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: C.faint }}>{syncStatus}</div>
