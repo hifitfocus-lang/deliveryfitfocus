@@ -39,18 +39,15 @@ function greeting() {
   if (h < 18) return "Selamat sore";
   return "Selamat malam";
 }
-// Rotating accent color + icon per gym card — purely visual variety so the
+// Rotating accent color per gym card — purely visual variety so the
 // grid doesn't read as one flat wall of identical white cards.
-const CARD_ACCENTS = [
-  { color: "#5E5CE6", icon: "🏋️" },
-  { color: "#0A84FF", icon: "💪" },
-  { color: "#FF9500", icon: "⚡" },
-  { color: "#AF52DE", icon: "🔥" },
-  { color: "#34C759", icon: "🏃" },
-  { color: "#FF375F", icon: "✨" },
-];
+const CARD_ACCENTS = ["#5E5CE6", "#0A84FF", "#FF9500", "#AF52DE", "#34C759", "#FF375F"];
 function accentFor(index) {
   return CARD_ACCENTS[index % CARD_ACCENTS.length];
+}
+function gymInitials(g) {
+  const words = gymShortName(g).trim().split(/\s+/);
+  return ((words[0]?.[0] || "") + (words[1]?.[0] || "")).toUpperCase() || "?";
 }
 
 // ── DESIGN TOKENS (matched to main dashboard) ─────────────────────────────────
@@ -209,7 +206,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             <LogoMark size={44} />
             <div>
               <div style={{ color: C.ink, fontSize: 16, fontWeight: 800, lineHeight: 1.15 }}>
-                {greeting()}{driverName ? `, ${driverName.split(" ")[0]}` : ""} 👋
+                {greeting()}{driverName ? `, ${driverName.split(" ")[0]}` : ""}
               </div>
               <div style={{ color: C.mute, fontSize: 12, marginTop: 1 }}>{todayLabel()}</div>
             </div>
@@ -232,7 +229,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             <div style={{ fontSize: 12, color: C.mute, fontWeight: 600, marginBottom: 4 }}>PROGRESS HARI INI</div>
             <div style={{ fontSize: 21, fontWeight: 800, color: allDone ? C.green : C.ink }}>
               {allDone
-                ? "Semua gym beres! 🎉"
+                ? "Semua gym beres!"
                 : `${remaining} gym lagi tersisa`}
             </div>
             {!allDone && (
@@ -269,16 +266,17 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                   style={{
                     position: "relative", ...glass,
                     border: "1.5px solid rgba(0,0,0,0.06)",
-                    borderTop: `3px solid ${accent.color}`,
+                    borderTop: `3px solid ${accent}`,
                     borderRadius: 22, padding: "20px 14px 18px", minHeight: 116,
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                     cursor: "pointer", fontFamily: "inherit", textAlign: "center",
                     animation: "ffPop 0.3s ease backwards", animationDelay: `${idx * 0.04}s`,
                   }}>
                   <div style={{
-                    width: 34, height: 34, borderRadius: 11, background: accent.color + "18",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, marginBottom: 8,
-                  }}>{accent.icon}</div>
+                    width: 32, height: 32, borderRadius: 10, background: accent + "16",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 800, color: accent, marginBottom: 8, letterSpacing: 0.2,
+                  }}>{gymInitials(gym)}</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.25 }}>
                     {gymShortName(gym)}
                   </div>
