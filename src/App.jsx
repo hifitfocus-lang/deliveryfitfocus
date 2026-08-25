@@ -1,8 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 
 // ── ICONS ──────────────────────────────────────────────────────────────────────
-// Self-contained inline icon set — no external icon package required, so this
-// file drops into any project without a new dependency to install.
 function makeIcon(paths) {
   return function IconComp({ size = 16, color = "currentColor", strokeWidth = 2, className }) {
     return (
@@ -16,9 +14,8 @@ function makeIcon(paths) {
 const ChevronLeft = makeIcon(<polyline points="15 18 9 12 15 6" />);
 const ChevronRight = makeIcon(<polyline points="9 18 15 12 9 6" />);
 const LogOut = makeIcon(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></>);
-const Plus = makeIcon(<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>);
-const Minus = makeIcon(<line x1="5" y1="12" x2="19" y2="12" />);
 const Check = makeIcon(<polyline points="20 6 9 17 4 12" />);
+const X = makeIcon(<><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>);
 const AlertTriangle = makeIcon(<><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>);
 const Loader2 = makeIcon(<path d="M21 12a9 9 0 1 1-6.219-8.56" />);
 const WifiOff = makeIcon(<><circle cx="12" cy="12" r="9" /><line x1="6" y1="6" x2="18" y2="18" /></>);
@@ -28,13 +25,7 @@ const Pencil = makeIcon(<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 
 const Delete = makeIcon(<><path d="M21 4H8l-6 8 6 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><line x1="12" y1="9" x2="18" y2="15" /><line x1="18" y1="9" x2="12" y2="15" /></>);
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-// Same Apps Script backend as the main dashboard — GET-based due to the
-// Apps Script Web App redirect dropping POST bodies (see dashboard notes).
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjae8ljZwXp3pdcxqV5B-MhiQc3PCwEAvf2MMYV29E0qMprWulUZwa4dlCpMZJ9tkc/exec";
-
-// Fallback lists used only if the sheet fetch hasn't resolved yet — the real
-// lists always come live from Apps Script once connected, so a flavor swap
-// in the sheet or a gym change shows up automatically without touching this file.
 const FALLBACK_GYMS = ["ARC Gym", "Mahabodhi Gym", "Asia Fitness Center", "RPM Solo Baru", "RPM Manahan", "GMP Gentan"];
 const FALLBACK_FLAVORS = ["Choco Forest", "Red Velvet", "Pink Banana", "Mixed Berry"];
 
@@ -65,9 +56,9 @@ function greeting() {
   if (h < 18) return "Selamat sore";
   return "Selamat malam";
 }
-// Rotating accent color per gym card — purely visual variety so the
-// grid doesn't read as one flat wall of identical white cards.
-const CARD_ACCENTS = ["#5E5CE6", "#0A84FF", "#FF9500", "#AF52DE", "#34C759", "#FF375F"];
+// Solid, saturated accents — chosen for contrast in direct sunlight rather
+// than for softness. No two neighbors repeat within a row of 6.
+const CARD_ACCENTS = ["#3D5AFE", "#E8590C", "#0F9D58", "#8E24AA", "#D81B60", "#1565C0"];
 function accentFor(index) {
   return CARD_ACCENTS[index % CARD_ACCENTS.length];
 }
@@ -77,53 +68,61 @@ function gymInitials(g) {
 }
 
 // ── DESIGN TOKENS ──────────────────────────────────────────────────────────────
+// Redesigned for outdoor / direct-sunlight legibility: solid opaque
+// surfaces instead of frosted glass (glare washes out translucency),
+// heavier borders instead of hairlines, and a darker ink for higher
+// contrast ratios against white.
 const C = {
-  indigo: "#5E5CE6",
-  indigoDeep: "#4A48C4",
-  green: "#34C759",
-  orange: "#FF9500",
-  blue: "#0A84FF",
-  red: "#FF3B30",
-  amber: "#B25E00",
-  amberBg: "#FFF4E5",
-  ink: "#1D1D1F",
-  sub: "#6E6E73",
-  mute: "#8E8E93",
-  faint: "#AEAEB2",
-  line: "#E5E5EA",
-  divider: "#D1D1D6",
+  blue: "#0B4FDE",
+  blueBg: "#E9EFFF",
+  orange: "#C45500",
+  orangeBg: "#FFEFDF",
+  green: "#0B8A3D",
+  greenBg: "#E4F7EA",
+  red: "#C22A1E",
+  redBg: "#FDEAE8",
+  amber: "#8A5A00",
+  amberBg: "#FFF1D6",
+  ink: "#141416",
+  sub: "#46474C",
+  mute: "#6B6C72",
+  faint: "#8E8F94",
+  line: "#DADADF",
+  paper: "#FFFFFF",
+  bg: "#F0EFEC",
 };
 
 const FONT = "-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text',system-ui,sans-serif";
-const bgGradient = "linear-gradient(160deg,#F1F0F8 0%,#F6F6FA 45%,#F3F8F4 100%)";
-const glass = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  boxShadow: "0 1px 2px rgba(20,20,30,0.04), 8px 10px 26px rgba(130,130,170,0.14), -6px -6px 18px rgba(255,255,255,0.7), inset 0 1px 0 rgba(255,255,255,0.55)",
-};
-const safeTop = "max(20px, env(safe-area-inset-top))";
-const safeBottom = "max(22px, env(safe-area-inset-bottom))";
+const safeTop = "max(18px, env(safe-area-inset-top))";
+const safeBottom = "max(20px, env(safe-area-inset-bottom))";
+// Opaque card — replaces the old blurred-glass surface everywhere so text
+// and numbers stay crisp under harsh outdoor light.
+const cardStyle = (border = C.line) => ({
+  background: C.paper,
+  border: `1.5px solid ${border}`,
+  boxShadow: "0 1px 0 rgba(20,20,22,0.02), 0 6px 16px rgba(20,20,22,0.07)",
+});
 
 // ── GLOBAL STYLES ──────────────────────────────────────────────────────────────
 function GlobalStyles() {
   return (
     <style>{`
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { background: ${C.bg}; overflow-x: hidden; }
       @keyframes ffPop { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
       @keyframes ffRise { 0% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
       @keyframes ffShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
       @keyframes ffSpin { to { transform: rotate(360deg); } }
       @keyframes ffFade { 0% { opacity: 0; } 100% { opacity: 1; } }
       .ff-btn { transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
-      .ff-btn:active { transform: scale(0.95); }
+      .ff-btn:active { transform: scale(0.96); }
       .ff-card { transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
       .ff-card:active { transform: scale(0.97); }
       .ff-spin { animation: ffSpin 0.85s linear infinite; }
       .ff-shake { animation: ffShake 0.4s ease; }
       button, input { font-family: inherit; }
       button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
-        outline: 2.5px solid ${C.indigo};
+        outline: 3px solid ${C.blue};
         outline-offset: 2px;
       }
       @media (prefers-reduced-motion: reduce) {
@@ -145,7 +144,7 @@ function LogoMark({ size = 72 }) {
       {!err ? (
         <img src="/logo.png" alt="FitFocus" onError={() => setErr(true)} style={{ width: "180%", height: "180%", objectFit: "contain" }} />
       ) : (
-        <span style={{ color: C.indigo, fontSize: size * 0.38, fontWeight: 700, letterSpacing: "-0.03em" }}>FF</span>
+        <span style={{ color: C.blue, fontSize: size * 0.38, fontWeight: 800, letterSpacing: "-0.03em" }}>FF</span>
       )}
     </div>
   );
@@ -153,32 +152,33 @@ function LogoMark({ size = 72 }) {
 
 // ── REUSABLE ALERT MODAL ───────────────────────────────────────────────────────
 function AlertModal({ icon: Icon, tone = "danger", title, body, cancelLabel = "Batal", confirmLabel, onCancel, onConfirm, busy }) {
-  const toneColor = tone === "danger" ? C.red : C.indigo;
+  const toneColor = tone === "danger" ? C.red : C.blue;
+  const toneBg = tone === "danger" ? C.redBg : C.blueBg;
   return (
     <div role="dialog" aria-modal="true" style={{
-      position: "fixed", inset: 0, background: "rgba(20,20,24,0.5)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 24,
+      position: "fixed", inset: 0, background: "rgba(15,15,17,0.6)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 22,
       fontFamily: FONT, animation: "ffFade 0.15s ease",
     }}>
-      <div style={{ background: "#fff", borderRadius: 26, padding: "26px 24px", width: "100%", maxWidth: 340, textAlign: "center", animation: "ffPop 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}>
+      <div style={{ background: C.paper, borderRadius: 24, padding: "28px 22px", width: "100%", maxWidth: 340, textAlign: "center", animation: "ffPop 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: "0 20px 50px rgba(0,0,0,0.3)" }}>
         {Icon && (
           <div style={{
-            width: 52, height: 52, borderRadius: "50%", background: toneColor + "17",
+            width: 56, height: 56, borderRadius: "50%", background: toneBg,
             display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px",
           }}>
-            <Icon size={24} color={toneColor} strokeWidth={2.25} />
+            <Icon size={26} color={toneColor} strokeWidth={2.25} />
           </div>
         )}
-        <div style={{ fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 8 }}>{title}</div>
-        <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: "0 0 22px" }}>{body}</p>
+        <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 8 }}>{title}</div>
+        <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.5, margin: "0 0 22px" }}>{body}</p>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="ff-btn" onClick={onCancel} disabled={busy} style={{
-            flex: 1, padding: "13px 14px", borderRadius: 14, border: `1.5px solid ${C.line}`,
-            background: "#fff", color: C.sub, fontSize: 14, fontWeight: 700, cursor: "pointer",
+            flex: 1, padding: "14px 14px", borderRadius: 14, border: `2px solid ${C.line}`,
+            background: C.paper, color: C.sub, fontSize: 15, fontWeight: 700, cursor: "pointer",
           }}>{cancelLabel}</button>
           <button className="ff-btn" onClick={onConfirm} disabled={busy} style={{
-            flex: 1, padding: "13px 14px", borderRadius: 14, border: "none",
-            background: toneColor, color: "#fff", fontSize: 14, fontWeight: 700,
+            flex: 1, padding: "14px 14px", borderRadius: 14, border: "none",
+            background: toneColor, color: "#fff", fontSize: 15, fontWeight: 700,
             cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1,
           }}>{confirmLabel}</button>
         </div>
@@ -191,63 +191,56 @@ function AlertModal({ icon: Icon, tone = "danger", title, body, cancelLabel = "B
 function LoginScreen({ onSubmit, loading, error }) {
   const [pin, setPin] = useState("");
 
-  // Clear the dots the moment a wrong-PIN error comes back, so the driver can
-  // immediately retype instead of having to manually backspace 4 times.
   useEffect(() => {
     if (error) setPin("");
   }, [error]);
 
   const tap = (digit) => {
-    if (pin.length >= 4) return; // hard-capped at 4 — a fast/extra tap is simply ignored
+    if (pin.length >= 4) return;
     const next = pin + digit;
     setPin(next);
-    if (next.length === 4) onSubmit(next); // auto-submit the moment the 4th digit lands
+    if (next.length === 4) onSubmit(next);
   };
   const backspace = () => setPin(pin.slice(0, -1));
 
   const keyBtnStyle = {
-    aspectRatio: "1", borderRadius: 20, border: "1px solid rgba(0,0,0,0.06)",
-    background: "rgba(255,255,255,0.82)", fontSize: 25, fontWeight: 600, color: C.ink,
-    cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    aspectRatio: "1", borderRadius: 18, border: `1.5px solid ${C.line}`,
+    background: C.paper, fontSize: 27, fontWeight: 700, color: C.ink,
+    cursor: "pointer", boxShadow: "0 2px 6px rgba(20,20,22,0.06)",
   };
 
   return (
     <div style={{
-      minHeight: "100vh", position: "relative", background: bgGradient,
+      minHeight: "100vh", position: "relative", background: C.bg,
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      padding: 24, fontFamily: FONT, letterSpacing: "-0.01em", overflow: "hidden",
+      padding: 22, fontFamily: FONT, letterSpacing: "-0.01em", overflowX: "hidden",
     }}>
-      <div style={{ position: "fixed", top: "-15%", left: "-12%", width: 420, height: 420, borderRadius: "50%", background: C.indigo, opacity: 0.18, filter: "blur(100px)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "-10%", right: "-12%", width: 400, height: 400, borderRadius: "50%", background: C.green, opacity: 0.14, filter: "blur(110px)", pointerEvents: "none" }} />
+      <div style={{ position: "relative", ...cardStyle(), borderRadius: 30, padding: "38px 26px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", animation: "ffRise 0.35s ease" }}>
+        <LogoMark size={76} />
+        <h1 style={{ color: C.ink, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", margin: "10px 0 2px" }}>FitFocus Driver</h1>
+        <p style={{ color: C.mute, fontSize: 14, margin: "0 0 26px" }}>Masukkan PIN 4 digit untuk masuk</p>
 
-      <div style={{ position: "relative", ...glass, border: "1px solid rgba(255,255,255,0.6)", borderRadius: 32, padding: "40px 28px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", animation: "ffRise 0.35s ease" }}>
-        <LogoMark size={80} />
-        <h1 style={{ color: C.ink, fontSize: 21, fontWeight: 800, letterSpacing: "-0.02em", margin: "10px 0 2px" }}>FitFocus Driver</h1>
-        <p style={{ color: C.mute, fontSize: 13, margin: "0 0 28px" }}>Masukkan PIN 4 digit untuk masuk</p>
-
-        {/* PIN dots */}
-        <div className={error ? "ff-shake" : ""} style={{ display: "flex", gap: 14, marginBottom: 28 }}>
+        <div className={error ? "ff-shake" : ""} style={{ display: "flex", gap: 16, marginBottom: 26 }}>
           {[0, 1, 2, 3].map(i => (
             <div key={i} style={{
-              width: 18, height: 18, borderRadius: "50%",
-              background: i < pin.length ? C.indigo : "transparent",
-              border: `2px solid ${i < pin.length ? C.indigo : C.line}`,
+              width: 20, height: 20, borderRadius: "50%",
+              background: i < pin.length ? C.blue : "transparent",
+              border: `2.5px solid ${i < pin.length ? C.blue : C.line}`,
               transition: "all 0.15s",
             }} />
           ))}
         </div>
 
-        {/* Numpad */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, width: "100%", marginBottom: 20, opacity: pin.length >= 4 || loading ? 0.45 : 1, transition: "opacity 0.15s" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, width: "100%", marginBottom: 20, opacity: pin.length >= 4 || loading ? 0.45 : 1, transition: "opacity 0.15s" }}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(n => (
             <button key={n} className="ff-btn" onClick={() => tap(n)} disabled={loading || pin.length >= 4} style={keyBtnStyle}>{n}</button>
           ))}
           <div />
           <button className="ff-btn" onClick={() => tap("0")} disabled={loading || pin.length >= 4} style={keyBtnStyle}>0</button>
           <button className="ff-btn" onClick={backspace} disabled={loading} aria-label="Hapus angka terakhir" style={{
-            aspectRatio: "1", borderRadius: 20, border: "none", background: "transparent",
+            aspectRatio: "1", borderRadius: 18, border: "none", background: "transparent",
             color: C.mute, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          }}><Delete size={22} strokeWidth={2} /></button>
+          }}><Delete size={24} strokeWidth={2} /></button>
         </div>
 
         <button
@@ -255,18 +248,17 @@ function LoginScreen({ onSubmit, loading, error }) {
           onClick={() => pin.length === 4 && !loading && onSubmit(pin)}
           disabled={pin.length !== 4 || loading}
           style={{
-            width: "100%", padding: "15px 16px", borderRadius: 16, border: "none",
+            width: "100%", padding: "16px 16px", borderRadius: 16, border: "none",
             cursor: pin.length === 4 && !loading ? "pointer" : "default",
-            background: pin.length === 4 ? C.indigo : "#D1D1D6",
-            color: "#fff", fontSize: 16, fontWeight: 700,
-            boxShadow: pin.length === 4 ? "0 4px 16px rgba(94,92,230,0.35)" : "none",
+            background: pin.length === 4 ? C.blue : "#C7C7CC",
+            color: "#fff", fontSize: 17, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-          {loading ? (<><Loader2 size={18} className="ff-spin" /> Memproses...</>) : "Masuk"}
+          {loading ? (<><Loader2 size={19} className="ff-spin" /> Memproses...</>) : "Masuk"}
         </button>
 
         {error && (
-          <div style={{ marginTop: 16, background: "#FFF1F0", color: "#D70015", padding: "11px 18px", borderRadius: 12, fontSize: 13, textAlign: "center", fontWeight: 600 }}>
+          <div style={{ marginTop: 16, background: C.redBg, color: C.red, padding: "12px 18px", borderRadius: 12, fontSize: 14, textAlign: "center", fontWeight: 700, width: "100%" }}>
             {error}
           </div>
         )}
@@ -287,101 +279,98 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
 
   return (
     <div style={{
-      minHeight: "100vh", position: "relative", background: bgGradient,
-      fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 40,
+      minHeight: "100vh", background: C.bg,
+      fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 40, overflowX: "hidden",
     }}>
-      <div style={{ position: "fixed", top: "-12%", left: "-10%", width: 380, height: 380, borderRadius: "50%", background: C.indigo, opacity: 0.14, filter: "blur(100px)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "-8%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.green, opacity: 0.12, filter: "blur(100px)", pointerEvents: "none" }} />
-
       {/* Header */}
-      <div style={{ position: "relative", padding: `${safeTop} 20px 18px` }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ padding: `${safeTop} 18px 16px` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <LogoMark size={44} />
-            <div>
-              <div style={{ color: C.ink, fontSize: 16, fontWeight: 800, lineHeight: 1.15 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: C.ink, fontSize: 17, fontWeight: 800, lineHeight: 1.15 }}>
                 {greeting()}{driverName ? `, ${driverName.split(" ")[0]}` : ""}
               </div>
-              <div style={{ color: C.mute, fontSize: 12, marginTop: 1 }}>{todayLabel()}</div>
+              <div style={{ color: C.mute, fontSize: 12.5, marginTop: 1 }}>{todayLabel()}</div>
             </div>
           </div>
           <button className="ff-btn" onClick={() => setConfirmingLogout(true)} aria-label="Keluar" style={{
-            width: 40, height: 40, borderRadius: 13, border: "1px solid rgba(0,0,0,0.06)",
-            background: "rgba(255,255,255,0.65)", color: C.sub, cursor: "pointer", flexShrink: 0,
+            width: 44, height: 44, borderRadius: 14, border: `1.5px solid ${C.line}`,
+            background: C.paper, color: C.sub, cursor: "pointer", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-          }}><LogOut size={17} strokeWidth={2} /></button>
+          }}><LogOut size={18} strokeWidth={2} /></button>
         </div>
 
         {syncStatus && (
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6, background: C.amberBg, color: C.amber,
-            padding: "6px 12px", borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+            padding: "7px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700,
           }}>
-            <WifiOff size={12} strokeWidth={2.5} /> {syncStatus}
+            <WifiOff size={13} strokeWidth={2.5} /> {syncStatus}
           </div>
         )}
       </div>
 
       {/* Progress banner */}
-      <div style={{ padding: "0 20px 14px" }}>
+      <div style={{ padding: "0 18px 14px" }}>
         <div style={{
-          ...glass, border: `1px solid ${allDone ? C.green + "44" : C.indigo + "33"}`,
-          borderRadius: 22, padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
+          ...cardStyle(allDone ? C.green : C.blue),
+          borderRadius: 20, padding: "18px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
         }}>
-          <div>
-            <div style={{ fontSize: 11.5, color: C.mute, fontWeight: 700, letterSpacing: 0.4, marginBottom: 4 }}>PROGRES HARI INI</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: allDone ? C.green : C.ink, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.4, marginBottom: 4 }}>PROGRES HARI INI</div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: allDone ? C.green : C.ink, display: "flex", alignItems: "center", gap: 6 }}>
               {allDone && <Check size={18} strokeWidth={3} color={C.green} />}
-              {allDone ? "Semua gym sudah selesai" : `Tersisa ${remaining} gym`}
+              {allDone ? "Semua gym selesai" : `Tersisa ${remaining} gym`}
             </div>
             {!allDone && (
-              <div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>{doneCount} dari {gyms.length} gym sudah dikirim</div>
+              <div style={{ fontSize: 12.5, color: C.mute, marginTop: 2 }}>{doneCount} dari {gyms.length} gym sudah dikirim</div>
             )}
           </div>
           <div style={{
-            width: 56, height: 56, borderRadius: "50%",
-            background: `conic-gradient(${allDone ? C.green : C.indigo} ${gyms.length ? (doneCount / gyms.length) * 360 : 0}deg, #E5E5EA 0deg)`,
+            width: 58, height: 58, borderRadius: "50%",
+            background: `conic-gradient(${allDone ? C.green : C.blue} ${gyms.length ? (doneCount / gyms.length) * 360 : 0}deg, #E5E5EA 0deg)`,
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: allDone ? C.green : C.indigo, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, fontWeight: 800, color: allDone ? C.green : C.blue, fontVariantNumeric: "tabular-nums" }}>
               {gyms.length ? Math.round((doneCount / gyms.length) * 100) : 0}%
             </div>
           </div>
         </div>
       </div>
 
-      {/* Session totals — only what's tracked on this device this session */}
+      {/* Session totals */}
       {sessionTotals.gymsCounted > 0 && (
-        <div style={{ padding: "0 20px 22px" }}>
-          <div style={{ fontSize: 11, color: C.mute, fontWeight: 700, letterSpacing: 0.4, marginBottom: 8, paddingLeft: 4 }}>
+        <div style={{ padding: "0 18px 22px" }}>
+          <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.4, marginBottom: 8, paddingLeft: 4 }}>
             TERKIRIM SESI INI
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div style={{ ...glass, border: `1px solid ${C.blue}26`, borderRadius: 18, padding: "13px 16px" }}>
+            <div style={{ ...cardStyle(C.blue), borderRadius: 18, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <Package size={13} color={C.blue} strokeWidth={2.25} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 0.3 }}>STOK</span>
+                <Package size={14} color={C.blue} strokeWidth={2.25} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: C.blue, letterSpacing: 0.3 }}>STOK</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{sessionTotals.stock}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{sessionTotals.stock}</div>
             </div>
-            <div style={{ ...glass, border: `1px solid ${C.orange}26`, borderRadius: 18, padding: "13px 16px" }}>
+            <div style={{ ...cardStyle(C.orange), borderRadius: 18, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <RotateCcw size={13} color={C.orange} strokeWidth={2.25} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.orange, letterSpacing: 0.3 }}>SISA</span>
+                <RotateCcw size={14} color={C.orange} strokeWidth={2.25} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: C.orange, letterSpacing: 0.3 }}>SISA</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{sessionTotals.waste}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{sessionTotals.waste}</div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Belum diisi — primary focus */}
+      {/* Belum diisi */}
       {todoGyms.length > 0 && (
-        <div style={{ padding: "0 20px 24px" }}>
-          <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
+        <div style={{ padding: "0 18px 24px" }}>
+          <div style={{ fontSize: 12.5, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
             BELUM DIISI · {todoGyms.length}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
             {todoGyms.map((gym) => {
               const idx = gyms.indexOf(gym);
               const accent = accentFor(idx);
@@ -391,24 +380,23 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                   className="ff-card"
                   onClick={() => onSelectGym(gym)}
                   style={{
-                    position: "relative", ...glass,
-                    border: "1.5px solid rgba(0,0,0,0.06)",
-                    borderTop: `3px solid ${accent}`,
-                    borderRadius: 22, padding: "20px 14px 18px", minHeight: 120,
+                    position: "relative", ...cardStyle(),
+                    borderTop: `4px solid ${accent}`,
+                    borderRadius: 20, padding: "20px 12px 18px", minHeight: 124, minWidth: 0,
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                     cursor: "pointer", textAlign: "center",
                     animation: "ffPop 0.3s ease backwards", animationDelay: `${idx * 0.04}s`,
                   }}>
                   <div style={{
-                    width: 32, height: 32, borderRadius: 10, background: accent + "16",
+                    width: 34, height: 34, borderRadius: 10, background: accent,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 12, fontWeight: 800, color: accent, marginBottom: 8, letterSpacing: 0.2,
+                    fontSize: 13, fontWeight: 800, color: "#fff", marginBottom: 8, letterSpacing: 0.2,
                   }}>{gymInitials(gym)}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.25 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
                     {gymShortName(gym)}
                   </div>
-                  <div style={{ fontSize: 11, color: C.faint, marginTop: 4, display: "flex", alignItems: "center", gap: 2 }}>
-                    Ketuk untuk isi data <ChevronRight size={12} strokeWidth={2.5} />
+                  <div style={{ fontSize: 11.5, color: C.mute, marginTop: 4, display: "flex", alignItems: "center", gap: 2, fontWeight: 600 }}>
+                    Ketuk untuk isi <ChevronRight size={12} strokeWidth={2.5} />
                   </div>
                 </button>
               );
@@ -417,10 +405,10 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
         </div>
       )}
 
-      {/* Sudah diisi — secondary, compact */}
+      {/* Sudah diisi */}
       {doneGyms.length > 0 && (
-        <div style={{ padding: "0 20px" }}>
-          <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
+        <div style={{ padding: "0 18px" }}>
+          <div style={{ fontSize: 12.5, color: C.mute, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12, paddingLeft: 4 }}>
             SUDAH DIISI · {doneGyms.length}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -430,18 +418,18 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                 className="ff-card"
                 onClick={() => onSelectGym(gym)}
                 style={{
-                  ...glass, border: `1px solid ${C.green}33`, background: "rgba(52,199,89,0.06)",
+                  ...cardStyle(C.green), background: C.greenBg,
                   borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12,
-                  cursor: "pointer", textAlign: "left",
+                  cursor: "pointer", textAlign: "left", minWidth: 0,
                 }}>
                 <div style={{
-                  width: 26, height: 26, borderRadius: "50%", background: C.green, color: "#fff",
+                  width: 28, height: 28, borderRadius: "50%", background: C.green, color: "#fff",
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}><Check size={14} strokeWidth={3} /></div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.ink, flex: 1 }}>{gymShortName(gym)}</span>
+                }}><Check size={15} strokeWidth={3} /></div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gymShortName(gym)}</span>
                 <span style={{
-                  display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: C.green, fontWeight: 700,
-                  background: "rgba(52,199,89,0.12)", padding: "5px 10px", borderRadius: 999,
+                  display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: C.green, fontWeight: 700,
+                  background: "#fff", padding: "6px 11px", borderRadius: 999, flexShrink: 0,
                 }}><Pencil size={11} strokeWidth={2.5} /> Ubah</span>
               </button>
             ))}
@@ -465,29 +453,24 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
   );
 }
 
-// ── STEPPER FIELD (stok / sisa entry) ─────────────────────────────────────────
-function StepperField({ label, value, onChange, color, icon: Icon }) {
-  const num = parseInt(value, 10) || 0;
-  const dec = () => onChange(String(Math.max(0, num - 1)));
-  const inc = () => onChange(String(num + 1));
-
+// ── NUMBER FIELD (stok / sisa entry — no +/- steppers) ────────────────────────
+// Full-width, big-target field. Driver taps once to bring up the numeric
+// keypad and types the count directly; a clear "×" appears once a value is
+// entered so a mistake is one tap to fix instead of many decrements.
+function NumberField({ label, value, onChange, color, colorBg, icon: Icon }) {
+  const inputRef = useRef(null);
+  const filled = value !== "";
   return (
-    <div style={{ flex: 1 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        <Icon size={13} color={color} strokeWidth={2.25} />
-        <span style={{ fontSize: 11.5, fontWeight: 700, color, letterSpacing: 0.4 }}>{label}</span>
+    <div style={{ width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
+        <div style={{ width: 22, height: 22, borderRadius: 7, background: colorBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={12} color={color} strokeWidth={2.5} />
+        </div>
+        <span style={{ fontSize: 12.5, fontWeight: 800, color, letterSpacing: 0.4 }}>{label}</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <button
-          className="ff-btn" onClick={dec} aria-label={`Kurangi ${label}`}
-          disabled={num === 0}
-          style={{
-            width: 36, height: 36, borderRadius: 11, flexShrink: 0, cursor: num === 0 ? "default" : "pointer",
-            border: `1.5px solid ${value ? color + "33" : C.line}`, background: value ? color + "12" : "#F4F4F7",
-            color, display: "flex", alignItems: "center", justifyContent: "center", opacity: num === 0 ? 0.5 : 1,
-          }}><Minus size={15} strokeWidth={2.5} /></button>
-
+      <div style={{ position: "relative", width: "100%" }}>
         <input
+          ref={inputRef}
           type="tel"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -495,22 +478,28 @@ function StepperField({ label, value, onChange, color, icon: Icon }) {
           onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ""))}
           onFocus={(e) => e.target.select()}
           placeholder="0"
+          aria-label={label}
           style={{
-            flex: 1, minWidth: 0, boxSizing: "border-box", textAlign: "center",
-            fontSize: 27, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums",
-            padding: "10px 4px", borderRadius: 14,
-            border: `2px solid ${value ? color + "55" : C.line}`,
-            background: value ? color + "0d" : "rgba(255,255,255,0.7)",
+            width: "100%", boxSizing: "border-box", textAlign: "center",
+            fontSize: 34, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums",
+            padding: "16px 44px", borderRadius: 16,
+            border: `2.5px solid ${filled ? color : C.line}`,
+            background: filled ? colorBg : C.paper,
             outline: "none",
           }}
         />
-        <button
-          className="ff-btn" onClick={inc} aria-label={`Tambah ${label}`}
-          style={{
-            width: 36, height: 36, borderRadius: 11, flexShrink: 0, cursor: "pointer",
-            border: "none", background: color, color: "#fff",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}><Plus size={15} strokeWidth={2.5} /></button>
+        {filled && (
+          <button
+            className="ff-btn"
+            onClick={() => { onChange(""); inputRef.current?.focus(); }}
+            aria-label={`Kosongkan ${label}`}
+            style={{
+              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+              width: 32, height: 32, borderRadius: "50%", border: "none",
+              background: "rgba(20,20,22,0.08)", color: C.sub, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}><X size={15} strokeWidth={2.5} /></button>
+        )}
       </div>
     </div>
   );
@@ -541,63 +530,62 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
 
   return (
     <div style={{
-      minHeight: "100vh", position: "relative", background: bgGradient,
-      fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 130,
+      minHeight: "100vh", background: C.bg,
+      fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 140, overflowX: "hidden",
     }}>
-      <div style={{ position: "fixed", top: "-12%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.indigo, opacity: 0.13, filter: "blur(100px)", pointerEvents: "none" }} />
-
       {/* Header */}
-      <div style={{ position: "relative", padding: `${safeTop} 20px 16px`, display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ padding: `${safeTop} 18px 16px`, display: "flex", alignItems: "center", gap: 14 }}>
         <button
           className="ff-btn" onClick={handleBack} aria-label="Kembali"
           style={{
-            width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
-            background: "rgba(255,255,255,0.7)", color: C.ink, cursor: "pointer", flexShrink: 0,
+            width: 44, height: 44, borderRadius: 14, border: `1.5px solid ${C.line}`,
+            background: C.paper, color: C.ink, cursor: "pointer", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-          }}><ChevronLeft size={20} strokeWidth={2.25} /></button>
-        <div>
-          <div style={{ fontSize: 11, color: C.mute, fontWeight: 700, letterSpacing: 0.4 }}>ISI DATA</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: C.ink }}>{gymShortName(gym)}</div>
+          }}><ChevronLeft size={20} strokeWidth={2.5} /></button>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11.5, color: C.mute, fontWeight: 700, letterSpacing: 0.4 }}>ISI DATA</div>
+          <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gymShortName(gym)}</div>
         </div>
       </div>
 
       {/* Legend */}
-      <div style={{ padding: "0 20px 16px" }}>
-        <div style={{ ...glass, border: "1px solid rgba(0,0,0,0.05)", borderRadius: 18, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ padding: "0 18px 16px" }}>
+        <div style={{ ...cardStyle(), borderRadius: 18, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 8, background: C.blue + "16", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-              <Package size={13} color={C.blue} strokeWidth={2.25} />
+            <div style={{ width: 26, height: 26, borderRadius: 8, background: C.blueBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+              <Package size={14} color={C.blue} strokeWidth={2.5} />
             </div>
             <div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>Stok</span>
-              <span style={{ fontSize: 12.5, color: C.sub }}> — botol baru yang dikirim hari ini</span>
+              <span style={{ fontSize: 13.5, fontWeight: 800, color: C.ink }}>Stok</span>
+              <span style={{ fontSize: 13, color: C.sub }}> — botol baru yang dikirim hari ini</span>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 8, background: C.orange + "16", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-              <RotateCcw size={13} color={C.orange} strokeWidth={2.25} />
+            <div style={{ width: 26, height: 26, borderRadius: 8, background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+              <RotateCcw size={14} color={C.orange} strokeWidth={2.5} />
             </div>
             <div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>Sisa</span>
-              <span style={{ fontSize: 12.5, color: C.sub }}> — botol dari sesi sebelumnya yang diambil kembali</span>
+              <span style={{ fontSize: 13.5, fontWeight: 800, color: C.ink }}>Sisa</span>
+              <span style={{ fontSize: 13, color: C.sub }}> — botol dari sesi sebelumnya yang diambil kembali</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Flavor cards */}
-      <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Flavor cards — Stok and Sisa stacked full-width so nothing can
+          ever overflow the viewport, and each field gets a large tap target. */}
+      <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 14 }}>
         {flavors.map((flavor) => {
           const filled = values[flavor].stock !== "" || values[flavor].waste !== "";
           return (
             <div key={flavor} style={{
-              ...glass, border: `1.5px solid ${filled ? C.indigo + "33" : "rgba(0,0,0,0.06)"}`,
-              borderRadius: 22, padding: 18,
+              ...cardStyle(filled ? C.blue : C.line),
+              borderRadius: 20, padding: 18,
             }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{flavor}</div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <StepperField label="STOK" icon={Package} color={C.blue} value={values[flavor].stock} onChange={(v) => setField(flavor, "stock", v)} />
-                <StepperField label="SISA" icon={RotateCcw} color={C.orange} value={values[flavor].waste} onChange={(v) => setField(flavor, "waste", v)} />
+              <div style={{ fontSize: 16.5, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{flavor}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <NumberField label="STOK" icon={Package} color={C.blue} colorBg={C.blueBg} value={values[flavor].stock} onChange={(v) => setField(flavor, "stock", v)} />
+                <NumberField label="SISA" icon={RotateCcw} color={C.orange} colorBg={C.orangeBg} value={values[flavor].waste} onChange={(v) => setField(flavor, "waste", v)} />
               </div>
             </div>
           );
@@ -606,11 +594,10 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
 
       {/* Sticky bottom CTA */}
       <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, padding: `16px 20px ${safeBottom}`,
-        background: "linear-gradient(0deg, rgba(243,243,247,0.98) 60%, rgba(243,243,247,0))",
-        backdropFilter: "blur(6px)",
+        position: "fixed", bottom: 0, left: 0, right: 0, padding: `16px 18px ${safeBottom}`,
+        background: "linear-gradient(0deg, rgba(240,239,236,1) 65%, rgba(240,239,236,0))",
       }}>
-        <div style={{ fontSize: 12, color: C.mute, textAlign: "center", marginBottom: 10 }}>
+        <div style={{ fontSize: 12.5, color: C.mute, textAlign: "center", marginBottom: 10, fontWeight: 600 }}>
           {filledCount} dari {flavors.length} rasa terisi
         </div>
         <button
@@ -618,14 +605,14 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
           onClick={() => canReview && onReviewSubmit(gym, values)}
           disabled={!canReview}
           style={{
-            width: "100%", padding: "17px 16px", borderRadius: 18, border: "none",
+            width: "100%", padding: "18px 16px", borderRadius: 18, border: "none",
             cursor: canReview ? "pointer" : "default",
-            background: canReview ? C.indigo : "#D1D1D6",
-            color: "#fff", fontSize: 16, fontWeight: 700,
-            boxShadow: canReview ? "0 6px 20px rgba(94,92,230,0.35)" : "none",
+            background: canReview ? C.blue : "#C7C7CC",
+            color: "#fff", fontSize: 17, fontWeight: 700,
+            boxShadow: canReview ? "0 8px 22px rgba(11,79,222,0.32)" : "none",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-          Periksa & Kirim <ChevronRight size={18} strokeWidth={2.5} />
+          Periksa & Kirim <ChevronRight size={19} strokeWidth={2.5} />
         </button>
       </div>
 
@@ -653,39 +640,39 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
 
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(4px)",
+      position: "fixed", inset: 0, background: "rgba(15,15,17,0.6)",
       display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100, fontFamily: FONT,
     }}>
       <div style={{
-        width: "100%", maxWidth: 480, background: "#fff", borderRadius: "28px 28px 0 0",
-        padding: `28px 24px calc(${safeBottom} + 8px)`, boxShadow: "0 -10px 40px rgba(0,0,0,0.2)",
-        maxHeight: "80vh", overflowY: "auto", animation: "ffRise 0.25s ease",
+        width: "100%", maxWidth: 480, background: C.paper, borderRadius: "28px 28px 0 0",
+        padding: `26px 20px calc(${safeBottom} + 8px)`, boxShadow: "0 -10px 40px rgba(0,0,0,0.25)",
+        maxHeight: "80vh", overflowY: "auto", animation: "ffRise 0.25s ease", boxSizing: "border-box",
       }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: "#E5E5EA", margin: "0 auto 20px" }} />
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
 
         <div style={{ textAlign: "center", marginBottom: 6 }}>
           <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.5 }}>KONFIRMASI</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, marginTop: 2 }}>{gymShortName(gym)}</div>
+          <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, marginTop: 2 }}>{gymShortName(gym)}</div>
         </div>
-        <p style={{ textAlign: "center", color: C.sub, fontSize: 13, margin: "6px 0 20px" }}>
+        <p style={{ textAlign: "center", color: C.sub, fontSize: 13.5, margin: "6px 0 20px" }}>
           Cek lagi sebelum kirim. Pastikan semua angka sudah benar.
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {rows.map(r => (
             <div key={r.flavor} style={{
-              background: "#F7F7F9", borderRadius: 16, padding: "14px 16px",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: C.bg, borderRadius: 16, padding: "14px 16px",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
             }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{r.flavor}</span>
-              <div style={{ display: "flex", gap: 16 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.flavor}</span>
+              <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 9, color: C.blue, fontWeight: 700, letterSpacing: 0.3 }}>STOK</div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{r.stock}</div>
+                  <div style={{ fontSize: 9.5, color: C.blue, fontWeight: 800, letterSpacing: 0.3 }}>STOK</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{r.stock}</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 9, color: C.orange, fontWeight: 700, letterSpacing: 0.3 }}>SISA</div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{r.waste}</div>
+                  <div style={{ fontSize: 9.5, color: C.orange, fontWeight: 800, letterSpacing: 0.3 }}>SISA</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{r.waste}</div>
                 </div>
               </div>
             </div>
@@ -693,16 +680,16 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
         </div>
 
         {rows.length > 1 && (
-          <div style={{ display: "flex", justifyContent: "space-around", padding: "10px 0 20px", borderTop: "1px solid #EFEFF2" }}>
+          <div style={{ display: "flex", justifyContent: "space-around", padding: "10px 0 20px", borderTop: `1.5px solid ${C.line}` }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: C.blue, fontWeight: 700, letterSpacing: 0.3 }}>TOTAL STOK</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ fontSize: 10.5, color: C.blue, fontWeight: 800, letterSpacing: 0.3 }}>TOTAL STOK</div>
+              <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>
                 {rows.reduce((sum, r) => sum + (parseInt(r.stock, 10) || 0), 0)}
               </div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 0.3 }}>TOTAL SISA</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ fontSize: 10.5, color: C.orange, fontWeight: 800, letterSpacing: 0.3 }}>TOTAL SISA</div>
+              <div style={{ fontSize: 21, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>
                 {rows.reduce((sum, r) => sum + (parseInt(r.waste, 10) || 0), 0)}
               </div>
             </div>
@@ -711,15 +698,15 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
 
         <div style={{ display: "flex", gap: 10 }}>
           <button className="ff-btn" onClick={onCancel} disabled={submitting} style={{
-            flex: 1, padding: "15px 16px", borderRadius: 16, border: "1.5px solid #E5E5EA",
-            background: "#fff", color: C.sub, fontSize: 15, fontWeight: 700, cursor: "pointer",
+            flex: 1, padding: "16px 16px", borderRadius: 16, border: `2px solid ${C.line}`,
+            background: C.paper, color: C.sub, fontSize: 15, fontWeight: 700, cursor: "pointer",
           }}>
             Edit Lagi
           </button>
           <button className="ff-btn" onClick={onConfirm} disabled={submitting} style={{
-            flex: 2, padding: "15px 16px", borderRadius: 16, border: "none",
+            flex: 2, padding: "16px 16px", borderRadius: 16, border: "none",
             background: C.green, color: "#fff", fontSize: 15, fontWeight: 700, cursor: submitting ? "default" : "pointer",
-            boxShadow: "0 6px 20px rgba(52,199,89,0.35)", opacity: submitting ? 0.75 : 1,
+            boxShadow: "0 8px 22px rgba(11,138,61,0.32)", opacity: submitting ? 0.75 : 1,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
             {submitting ? (<><Loader2 size={16} className="ff-spin" /> Mengirim...</>) : (<><Check size={16} strokeWidth={2.5} /> Ya, Kirim Data</>)}
@@ -734,19 +721,19 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
 function SuccessOverlay({ gym }) {
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(20,20,24,0.35)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, fontFamily: FONT,
+      position: "fixed", inset: 0, background: "rgba(15,15,17,0.45)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, fontFamily: FONT, padding: 20,
     }}>
       <div style={{
-        background: "#fff", borderRadius: 28, padding: "36px 40px", textAlign: "center",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.25)", animation: "ffPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+        background: C.paper, borderRadius: 26, padding: "36px 36px", textAlign: "center",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "ffPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
       }}>
         <div style={{
-          width: 64, height: 64, borderRadius: "50%", background: C.green,
+          width: 66, height: 66, borderRadius: "50%", background: C.green,
           display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
-        }}><Check size={30} strokeWidth={3} color="#fff" /></div>
-        <div style={{ fontSize: 17, fontWeight: 800, color: C.ink }}>{gymShortName(gym)} berhasil dikirim</div>
-        <div style={{ fontSize: 13, color: C.mute, marginTop: 4 }}>Lanjut ke gym berikutnya</div>
+        }}><Check size={32} strokeWidth={3} color="#fff" /></div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: C.ink }}>{gymShortName(gym)} berhasil dikirim</div>
+        <div style={{ fontSize: 13.5, color: C.mute, marginTop: 4 }}>Lanjut ke gym berikutnya</div>
       </div>
     </div>
   );
@@ -763,7 +750,6 @@ export default function App() {
   const [flavors, setFlavors] = useState(FALLBACK_FLAVORS);
   const [syncStatus, setSyncStatus] = useState("");
 
-  // screen: "tray" | "form"
   const [screen, setScreen] = useState("tray");
   const [activeGym, setActiveGym] = useState(null);
   const [pendingValues, setPendingValues] = useState(null);
@@ -771,10 +757,8 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // completedToday: Set of gym names already submitted today. Keyed by todayKey()
-  // so it naturally resets when the date rolls over (see loadCompletedToday).
   const [completedToday, setCompletedToday] = useState(new Set());
-  const [savedValues, setSavedValues] = useState({}); // gym -> values, for editing before final submit and for session totals
+  const [savedValues, setSavedValues] = useState({});
 
   const loadGymList = useCallback(async (token) => {
     try {
@@ -796,22 +780,19 @@ export default function App() {
       if (data.ok && Array.isArray(data.flavors) && data.flavors.length) {
         setFlavors(data.flavors);
       }
-      // silent fallback on failure — driver still works with FALLBACK_FLAVORS
     } catch {
-      // silent — same fallback behavior as loadGymList
+      // silent fallback
     }
   }, []);
 
   const loadCompletedToday = useCallback(async (token) => {
-    // Resets naturally: this always asks the backend for "today" (todayKey()),
-    // so a new day returns an empty set with zero client-side logic needed.
     try {
       const data = await callAppsScript({ action: "getTodayStatus", token, date: todayKey() });
       if (data.ok && Array.isArray(data.completedGyms)) {
         setCompletedToday(new Set(data.completedGyms));
       }
     } catch {
-      // silent — driver can still work, checkmarks just won't be pre-filled
+      // silent
     }
   }, []);
 
@@ -857,10 +838,6 @@ export default function App() {
   const handleConfirmSend = async () => {
     setSubmitting(true);
     try {
-      // Payload shape: gym, date, and per-flavor stock/waste. Waste is written
-      // to the PREVIOUS session's Sisa column by default on the backend side —
-      // this app just sends the raw numbers, the sheet-write logic (which
-      // session to update) lives in Apps Script.
       const flavorPayload = {};
       flavors.forEach(f => {
         flavorPayload[f] = { stock: Number(pendingValues[f].stock) || 0, waste: Number(pendingValues[f].waste) || 0 };
@@ -889,10 +866,6 @@ export default function App() {
     }
   };
 
-  // Local-session totals for the header stat cards. Deliberately scoped to
-  // "this session" (savedValues resets on logout) rather than "today" — the
-  // backend only returns which gyms are done, not their submitted numbers,
-  // so a true full-day total isn't available client-side without overclaiming.
   const sessionTotals = useMemo(() => {
     let stock = 0, waste = 0, gymsCounted = 0;
     Object.values(savedValues).forEach((vals) => {
