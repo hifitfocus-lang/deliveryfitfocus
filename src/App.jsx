@@ -73,9 +73,17 @@ function LogoMark({ size = 72 }) {
 function LoginScreen({ onSubmit, loading, error }) {
   const [pin, setPin] = useState("");
 
+  // Clear the dots the moment a wrong-PIN error comes back, so the driver can
+  // immediately retype instead of having to manually backspace 4 times.
+  useEffect(() => {
+    if (error) setPin("");
+  }, [error]);
+
   const tap = (digit) => {
-    if (pin.length >= 6) return;
-    setPin(pin + digit);
+    if (pin.length >= 4) return; // hard-capped at 4 — a fast/extra tap is simply ignored
+    const next = pin + digit;
+    setPin(next);
+    if (next.length === 4) onSubmit(next); // auto-submit the moment the 4th digit lands
   };
   const backspace = () => setPin(pin.slice(0, -1));
 
@@ -95,7 +103,7 @@ function LoginScreen({ onSubmit, loading, error }) {
         <p style={{ color: C.mute, fontSize: 13, margin: "0 0 28px" }}>Enter your PIN to start</p>
 
         {/* PIN dots */}
-        <div style={{ display: "flex", gap: 14, marginBottom: 28 }}>
+        <div style={{ display: "flex", gap: 14, marginBottom: 28, animation: error ? "ffShake 0.4s" : "none" }}>
           {[0, 1, 2, 3].map(i => (
             <div key={i} style={{
               width: 18, height: 18, borderRadius: "50%",
@@ -107,9 +115,9 @@ function LoginScreen({ onSubmit, loading, error }) {
         </div>
 
         {/* Numpad */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, width: "100%", marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, width: "100%", marginBottom: 20, opacity: pin.length >= 4 || loading ? 0.45 : 1, transition: "opacity 0.15s" }}>
           {["1","2","3","4","5","6","7","8","9"].map(n => (
-            <button key={n} onClick={() => tap(n)} disabled={loading}
+            <button key={n} onClick={() => tap(n)} disabled={loading || pin.length >= 4}
               style={{
                 aspectRatio: "1", borderRadius: 20, border: "1px solid rgba(0,0,0,0.06)",
                 background: "rgba(255,255,255,0.8)", fontSize: 26, fontWeight: 600, color: C.ink,
@@ -118,7 +126,7 @@ function LoginScreen({ onSubmit, loading, error }) {
               }}>{n}</button>
           ))}
           <div />
-          <button onClick={() => tap("0")} disabled={loading}
+          <button onClick={() => tap("0")} disabled={loading || pin.length >= 4}
             style={{
               aspectRatio: "1", borderRadius: 20, border: "1px solid rgba(0,0,0,0.06)",
               background: "rgba(255,255,255,0.8)", fontSize: 26, fontWeight: 600, color: C.ink,
@@ -159,6 +167,7 @@ function LoginScreen({ onSubmit, loading, error }) {
 function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, syncStatus }) {
   const doneCount = gyms.filter(g => completedToday.has(g)).length;
   const allDone = doneCount === gyms.length && gyms.length > 0;
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   return (
     <div style={{
@@ -174,7 +183,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
           <div style={{ width: 44 }} />
           <LogoMark size={52} />
-          <button onClick={onLogout} style={{
+          <button onClick={() => setConfirmingLogout(true)} style={{
             width: 44, height: 44, borderRadius: 14, border: "1px solid rgba(0,0,0,0.06)",
             background: "rgba(255,255,255,0.6)", color: C.mute, fontSize: 12, fontWeight: 600,
             cursor: "pointer", fontFamily: "inherit",
@@ -238,7 +247,9 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                 <div style={{ fontSize: 15, fontWeight: 700, color: done ? C.green : C.ink, lineHeight: 1.25 }}>
                   {gymShortName(gym)}
                 </div>
-                {!done && <div style={{ fontSize: 11, color: C.faint, marginTop: 4 }}>Belum diisi</div>}
+                <div style={{ fontSize: 11, color: done ? C.green + "99" : C.faint, marginTop: 4 }}>
+                  {done ? "Sudah diisi · ketuk untuk edit" : "Belum diisi"}
+                </div>
               </button>
             );
           })}
@@ -247,6 +258,30 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
 
       {syncStatus && (
         <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: C.faint }}>{syncStatus}</div>
+      )}
+
+      {confirmingLogout && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(20,20,24,0.5)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 24,
+        }}>
+          <div style={{ background: "#fff", borderRadius: 24, padding: "24px 22px", width: "100%", maxWidth: 320, textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 6 }}>Keluar dari akun?</div>
+            <p style={{ fontSize: 13, color: C.sub, margin: "0 0 20px" }}>
+              Progres hari ini yang sudah dikirim tetap tersimpan, tapi kamu harus login PIN lagi.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setConfirmingLogout(false)} style={{
+                flex: 1, padding: "13px 14px", borderRadius: 14, border: "1.5px solid #E5E5EA",
+                background: "#fff", color: C.sub, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              }}>Batal</button>
+              <button onClick={onLogout} style={{
+                flex: 1, padding: "13px 14px", borderRadius: 14, border: "none",
+                background: C.red, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              }}>Keluar</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -311,10 +346,15 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
 
       {/* Header */}
       <div style={{ position: "relative", padding: "20px 20px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-        <button onClick={onBack} style={{
-          width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
-          background: "rgba(255,255,255,0.7)", fontSize: 18, color: C.ink, cursor: "pointer", flexShrink: 0,
-        }}>←</button>
+        <button
+          onClick={() => {
+            if (filledCount > 0 && !confirm("Ada data yang belum dikirim. Yakin mau kembali? Isian akan hilang.")) return;
+            onBack();
+          }}
+          style={{
+            width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.7)", fontSize: 18, color: C.ink, cursor: "pointer", flexShrink: 0,
+          }}>←</button>
         <div>
           <div style={{ fontSize: 11, color: C.mute, fontWeight: 600 }}>MENGISI DATA</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: C.ink }}>{gymShortName(gym)}</div>
@@ -326,13 +366,11 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit }) {
         <div style={{ ...glass, border: "1px solid rgba(0,0,0,0.05)", borderRadius: 16, padding: "12px 16px", display: "flex", gap: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 10, height: 10, borderRadius: 3, background: C.blue }} />
-            <span style={{ fontSize: 12, color: C.sub }}>Stock = botol baru ditaruh</span>
+            <span style={{ fontSize: 12, color: C.sub }}>Stock = botol baru</span>
           </div>
-        </div>
-        <div style={{ ...glass, border: "1px solid rgba(0,0,0,0.05)", borderRadius: 16, padding: "12px 16px", marginTop: 8, display: "flex", gap: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 10, height: 10, borderRadius: 3, background: C.orange }} />
-            <span style={{ fontSize: 12, color: C.sub }}>Waste = sisa botol lama diambil</span>
+            <span style={{ fontSize: 12, color: C.sub }}>Waste = sisa diambil</span>
           </div>
         </div>
       </div>
@@ -421,7 +459,7 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
           Cek lagi sebelum kirim — pastikan angkanya sudah benar
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {rows.map(r => (
             <div key={r.flavor} style={{
               background: "#F7F7F9", borderRadius: 16, padding: "14px 16px",
@@ -441,6 +479,26 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
             </div>
           ))}
         </div>
+
+        {rows.length > 1 && (
+          <div style={{
+            display: "flex", justifyContent: "space-around", padding: "10px 0 20px",
+            borderTop: "1px solid #EFEFF2",
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: C.blue, fontWeight: 700 }}>TOTAL STOCK</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: C.ink }}>
+                {rows.reduce((sum, r) => sum + (parseInt(r.stock, 10) || 0), 0)}
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: C.orange, fontWeight: 700 }}>TOTAL WASTE</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: C.ink }}>
+                {rows.reduce((sum, r) => sum + (parseInt(r.waste, 10) || 0), 0)}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel} disabled={submitting} style={{
