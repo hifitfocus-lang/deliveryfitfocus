@@ -18,16 +18,14 @@ const Check = makeIcon(<polyline points="20 6 9 17 4 12" />);
 const X = makeIcon(<><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>);
 const AlertTriangle = makeIcon(<><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>);
 const Loader2 = makeIcon(<path d="M21 12a9 9 0 1 1-6.219-8.56" />);
-const WifiOff = makeIcon(<><circle cx="12" cy="12" r="9" /><line x1="6" y1="6" x2="18" y2="18" /></>);
 const Package = makeIcon(<><rect x="4" y="7" width="16" height="13" rx="1.5" /><path d="M4 7l8-4 8 4" /><line x1="12" y1="7" x2="12" y2="20" /></>);
 const RotateCcw = makeIcon(<><path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 4 3 9 8 9" /></>);
 const Pencil = makeIcon(<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></>);
 const Delete = makeIcon(<><path d="M21 4H8l-6 8 6 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><line x1="12" y1="9" x2="18" y2="15" /><line x1="18" y1="9" x2="12" y2="15" /></>);
+const CloudOff = makeIcon(<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5 3 3" /><path d="m2 2 20 20" /><path d="M17.66 17.66A5 5 0 0 1 18 19H6a4 4 0 0 1-1.28-7.78" /></>);
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjae8ljZwXp3pdcxqV5B-MhiQc3PCwEAvf2MMYV29E0qMprWulUZwa4dlCpMZJ9tkc/exec";
-const FALLBACK_GYMS = ["ARC Gym", "Mahabodhi Gym", "Asia Fitness Center", "RPM Solo Baru", "RPM Manahan", "GMP Gentan"];
-const FALLBACK_FLAVORS = ["Choco Forest", "Red Velvet", "Pink Banana", "Mixed Berry"];
 
 async function callAppsScript(payload) {
   const params = new URLSearchParams();
@@ -56,8 +54,8 @@ function greeting() {
   if (h < 18) return "Selamat sore";
   return "Selamat malam";
 }
-// Solid, saturated accents — chosen for contrast in direct sunlight rather
-// than for softness. No two neighbors repeat within a row of 6.
+// Solid, saturated accents used sparingly — as gym identity, not as background
+// wash — so they read as wayfinding rather than decoration.
 const CARD_ACCENTS = ["#3D5AFE", "#E8590C", "#0F9D58", "#8E24AA", "#D81B60", "#1565C0"];
 function accentFor(index) {
   return CARD_ACCENTS[index % CARD_ACCENTS.length];
@@ -68,49 +66,45 @@ function gymInitials(g) {
 }
 
 // ── DESIGN TOKENS ──────────────────────────────────────────────────────────────
-// True "liquid glass" — layered translucency, soft specular highlight along
-// the top edge, saturated blur, and rounded, pill-like geometry. Driver works
-// indoors at the gym front desk, so legibility-under-glare isn't the
-// constraint here; the constraint is looking premium and feeling like iOS.
+// Refined glass, second pass: lighter blur, quieter shadows, more restrained
+// use of tint. The material should feel like a thin pane of frosted glass
+// resting on the page — not a saturated colored panel. Boldness is spent on
+// the card-stack motion and the gym identity accents, not on the surfaces.
 const C = {
   indigo: "#5E5CE6",
   indigoDeep: "#4A48C4",
-  green: "#34C759",
-  greenBg: "rgba(52,199,89,0.14)",
-  orange: "#FF9500",
-  orangeBg: "rgba(255,149,0,0.14)",
-  blue: "#0A84FF",
-  blueBg: "rgba(10,132,255,0.14)",
-  red: "#FF3B30",
-  redBg: "rgba(255,59,48,0.12)",
-  amber: "#B25E00",
-  amberBg: "#FFF4E5",
-  ink: "#1D1D1F",
-  sub: "#6E6E73",
+  green: "#2FAE60",
+  greenBg: "rgba(47,174,96,0.10)",
+  orange: "#C2760C",
+  orangeBg: "rgba(194,118,12,0.10)",
+  blue: "#0A7CFF",
+  blueBg: "rgba(10,124,255,0.10)",
+  red: "#E5372B",
+  redBg: "rgba(229,55,43,0.09)",
+  amber: "#9A6300",
+  amberBg: "#FBF2E2",
+  ink: "#1C1C1E",
+  sub: "#6C6C70",
   mute: "#8E8E93",
-  faint: "#AEAEB2",
-  line: "#E5E5EA",
+  faint: "#B4B4B8",
+  line: "#EAEAEE",
   paper: "#FFFFFF",
-  bg: "#F1F0F8",
+  bg: "#F3F2F8",
 };
 
 const FONT = "-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text',system-ui,sans-serif";
-const bgGradient = "linear-gradient(160deg,#F1F0F8 0%,#F6F6FA 45%,#F3F8F4 100%)";
+const bgGradient = "linear-gradient(165deg,#F5F4FA 0%,#F7F7FB 50%,#F4F8F5 100%)";
 const safeTop = "max(20px, env(safe-area-inset-top))";
 const safeBottom = "max(22px, env(safe-area-inset-bottom))";
-// Liquid-glass card: translucent, blurred, with a soft inner top-edge
-// highlight to sell the "glass catching light" look, and a border tinted by
-// the accent color rather than plain gray.
-const glass = (border = "rgba(255,255,255,0.6)") => ({
-  background: "rgba(255,255,255,0.68)",
-  backdropFilter: "blur(26px) saturate(190%)",
-  WebkitBackdropFilter: "blur(26px) saturate(190%)",
+// Lighter pane: less blur, a single quiet shadow, a thin bright top rim
+// instead of the previous five-layer stack.
+const glass = (border = "rgba(255,255,255,0.7)") => ({
+  background: "rgba(255,255,255,0.80)",
+  backdropFilter: "blur(14px) saturate(150%)",
+  WebkitBackdropFilter: "blur(14px) saturate(150%)",
   border: `1px solid ${border}`,
-  // Two-tone: a warm, soft shadow beneath (as if light falls from above) and
-  // a cool inner rim-light along the top edge (as if the glass itself catches it).
-  boxShadow: "0 1px 2px rgba(20,20,30,0.05), 0 14px 30px -10px rgba(94,92,230,0.16), 10px 14px 32px rgba(130,130,170,0.14), -6px -8px 20px rgba(255,255,255,0.65), inset 0 1.5px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25)",
+  boxShadow: "0 1px 2px rgba(20,20,30,0.04), 0 10px 26px -12px rgba(60,60,90,0.14), inset 0 1px 0 rgba(255,255,255,0.7)",
 });
-// Kept as an alias so the rest of the file reads the same as the glass era.
 const cardStyle = glass;
 
 // ── GLOBAL STYLES ──────────────────────────────────────────────────────────────
@@ -118,18 +112,16 @@ function GlobalStyles() {
   return (
     <style>{`
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-      html, body { background: #F1F0F8; overflow-x: hidden; }
+      html, body { background: #F3F2F8; overflow-x: hidden; }
       @keyframes ffPop { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
       @keyframes ffRise { 0% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
       @keyframes ffShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
       @keyframes ffSpin { to { transform: rotate(360deg); } }
       @keyframes ffFade { 0% { opacity: 0; } 100% { opacity: 1; } }
-      @keyframes ffScreenInFwd { 0% { opacity: 0; transform: translateY(18px) scale(0.985); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-      @keyframes ffScreenInBack { 0% { opacity: 0; transform: translateY(-10px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes ffCheckBounce { 0% { transform: scale(0); } 55% { transform: scale(1.18); } 75% { transform: scale(0.92); } 100% { transform: scale(1); } }
       @keyframes ffConfetti { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; } }
-      .ff-screen-fwd { animation: ffScreenInFwd 0.38s cubic-bezier(0.22,1,0.36,1) both; }
-      .ff-screen-back { animation: ffScreenInBack 0.32s cubic-bezier(0.22,1,0.36,1) both; }
+      @keyframes ffShimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
+      @keyframes ffPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
       .ff-confetti { animation: ffConfetti 0.7s cubic-bezier(0.22,1,0.36,1) both; }
       .ff-btn { transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
       .ff-btn:active { transform: scale(0.96); }
@@ -137,6 +129,8 @@ function GlobalStyles() {
       .ff-card:active { transform: scale(0.97); }
       .ff-spin { animation: ffSpin 0.85s linear infinite; }
       .ff-shake { animation: ffShake 0.4s ease; }
+      .ff-shimmer { background: linear-gradient(90deg, #ECECF2 0%, #F7F7FA 50%, #ECECF2 100%); background-size: 600px 100%; animation: ffShimmer 1.6s ease-in-out infinite; }
+      .ff-pulse { animation: ffPulse 1.8s ease-in-out infinite; }
       button, input { font-family: inherit; }
       button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
         outline: 2.5px solid ${C.indigo};
@@ -170,7 +164,7 @@ function LogoMark({ size = 72 }) {
 // ── REUSABLE ALERT MODAL ───────────────────────────────────────────────────────
 function AlertModal({ icon: Icon, tone = "danger", title, body, cancelLabel = "Batal", confirmLabel, onCancel, onConfirm, busy }) {
   const toneColor = tone === "danger" ? C.red : C.indigo;
-  const toneBg = tone === "danger" ? C.redBg : "rgba(94,92,230,0.14)";
+  const toneBg = tone === "danger" ? C.redBg : "rgba(94,92,230,0.12)";
   return (
     <div role="dialog" aria-modal="true" style={{
       position: "fixed", inset: 0, background: "rgba(20,20,24,0.5)", backdropFilter: "blur(4px)",
@@ -222,7 +216,7 @@ function LoginScreen({ onSubmit, loading, error }) {
 
   const keyBtnStyle = {
     aspectRatio: "1", borderRadius: 20, border: "1px solid rgba(0,0,0,0.06)",
-    background: "rgba(255,255,255,0.82)", fontSize: 25, fontWeight: 600, color: C.ink,
+    background: "rgba(255,255,255,0.85)", fontSize: 25, fontWeight: 600, color: C.ink,
     cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
   };
 
@@ -232,10 +226,10 @@ function LoginScreen({ onSubmit, loading, error }) {
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       padding: 24, fontFamily: FONT, letterSpacing: "-0.01em", overflow: "hidden",
     }}>
-      <div style={{ position: "fixed", top: "-15%", left: "-12%", width: 420, height: 420, borderRadius: "50%", background: C.indigo, opacity: 0.18, filter: "blur(100px)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "-10%", right: "-12%", width: 400, height: 400, borderRadius: "50%", background: C.green, opacity: 0.14, filter: "blur(110px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", top: "-15%", left: "-12%", width: 420, height: 420, borderRadius: "50%", background: C.indigo, opacity: 0.14, filter: "blur(110px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-10%", right: "-12%", width: 400, height: 400, borderRadius: "50%", background: C.green, opacity: 0.10, filter: "blur(120px)", pointerEvents: "none" }} />
 
-      <div style={{ position: "relative", ...cardStyle("rgba(255,255,255,0.6)"), borderRadius: 32, padding: "40px 28px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", animation: "ffRise 0.35s ease" }}>
+      <div style={{ position: "relative", ...cardStyle("rgba(255,255,255,0.65)"), borderRadius: 32, padding: "40px 28px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", animation: "ffRise 0.35s ease" }}>
         <LogoMark size={80} />
         <h1 style={{ color: C.ink, fontSize: 21, fontWeight: 800, letterSpacing: "-0.02em", margin: "10px 0 2px" }}>FitFocus Driver</h1>
         <p style={{ color: C.mute, fontSize: 13, margin: "0 0 28px" }}>Masukkan PIN 4 digit untuk masuk</p>
@@ -272,7 +266,7 @@ function LoginScreen({ onSubmit, loading, error }) {
             cursor: pin.length === 4 && !loading ? "pointer" : "default",
             background: pin.length === 4 ? C.indigo : "#D1D1D6",
             color: "#fff", fontSize: 16, fontWeight: 700,
-            boxShadow: pin.length === 4 ? "0 4px 16px rgba(94,92,230,0.35)" : "none",
+            boxShadow: pin.length === 4 ? "0 4px 16px rgba(94,92,230,0.32)" : "none",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
           {loading ? (<><Loader2 size={18} className="ff-spin" /> Memproses...</>) : "Masuk"}
@@ -288,9 +282,81 @@ function LoginScreen({ onSubmit, loading, error }) {
   );
 }
 
+// ── SYNC LOADING SCREEN ────────────────────────────────────────────────────────
+// Shown after login while gyms/flavors/status are fetched from the sheet.
+// Skeleton echoes the real tray grid rather than a bare spinner, so the wait
+// still reads as "your data is arriving" instead of a blank hold.
+function SyncingScreen({ driverName }) {
+  return (
+    <div style={{
+      minHeight: "100vh", position: "relative", background: bgGradient,
+      fontFamily: FONT, letterSpacing: "-0.01em", overflowX: "hidden",
+    }}>
+      <div style={{ position: "fixed", top: "-12%", left: "-10%", width: 380, height: 380, borderRadius: "50%", background: C.indigo, opacity: 0.12, filter: "blur(100px)", pointerEvents: "none" }} />
+      <div style={{ padding: `${safeTop} 18px 16px` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+          <LogoMark size={44} />
+          <div>
+            <div className="ff-pulse" style={{ color: C.ink, fontSize: 17, fontWeight: 800, lineHeight: 1.15 }}>
+              {greeting()}{driverName ? `, ${driverName.split(" ")[0]}` : ""}
+            </div>
+            <div style={{ color: C.mute, fontSize: 12.5, marginTop: 1 }}>Menyinkronkan data gym...</div>
+          </div>
+        </div>
+
+        <div style={{ ...cardStyle(), borderRadius: 20, padding: "18px", marginBottom: 22, display: "flex", alignItems: "center", gap: 14 }}>
+          <div className="ff-shimmer" style={{ width: 58, height: 58, borderRadius: "50%", flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div className="ff-shimmer" style={{ height: 13, width: "60%", borderRadius: 6, marginBottom: 8 }} />
+            <div className="ff-shimmer" style={{ height: 11, width: "40%", borderRadius: 6 }} />
+          </div>
+        </div>
+
+        <div style={{ fontSize: 12, color: C.mute, fontWeight: 700, letterSpacing: 0.4, marginBottom: 12, paddingLeft: 4 }}>MEMUAT DAFTAR GYM</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{ ...cardStyle(), borderRadius: 20, padding: "20px 12px", minHeight: 124, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+              <div className="ff-shimmer" style={{ width: 34, height: 34, borderRadius: 10 }} />
+              <div className="ff-shimmer" style={{ width: "70%", height: 12, borderRadius: 6 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SYNC ERROR SCREEN (blocking) ───────────────────────────────────────────────
+function SyncErrorScreen({ onRetry, retrying }) {
+  return (
+    <div style={{
+      minHeight: "100vh", position: "relative", background: bgGradient,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+      fontFamily: FONT, letterSpacing: "-0.01em",
+    }}>
+      <div style={{ ...cardStyle(), borderRadius: 28, padding: "36px 26px", width: "100%", maxWidth: 360, textAlign: "center" }}>
+        <div style={{
+          width: 60, height: 60, borderRadius: "50%", background: C.redBg,
+          display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+        }}><CloudOff size={27} color={C.red} strokeWidth={2} /></div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 8 }}>Gagal memuat daftar gym</div>
+        <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.5, margin: "0 0 24px" }}>
+          Tidak bisa menyambung ke sheet. Periksa koneksi internet kamu, lalu coba lagi.
+        </p>
+        <button className="ff-btn" onClick={onRetry} disabled={retrying} style={{
+          width: "100%", padding: "15px 16px", borderRadius: 15, border: "none",
+          background: C.indigo, color: "#fff", fontSize: 15, fontWeight: 700,
+          cursor: retrying ? "default" : "pointer", opacity: retrying ? 0.75 : 1,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        }}>
+          {retrying ? (<><Loader2 size={16} className="ff-spin" /> Mencoba lagi...</>) : "Coba Lagi"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── ANIMATED PROGRESS ──────────────────────────────────────────────────────────
-// Counts a number up/down smoothly instead of snapping, so the header stat
-// feels alive when a gym gets marked done.
 function useCountUp(target, duration = 500) {
   const [display, setDisplay] = useState(target);
   const fromRef = useRef(target);
@@ -301,7 +367,7 @@ function useCountUp(target, duration = 500) {
     let raf;
     const tick = (now) => {
       const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       setDisplay(Math.round(from + (target - from) * eased));
       if (t < 1) raf = requestAnimationFrame(tick);
       else fromRef.current = target;
@@ -312,8 +378,6 @@ function useCountUp(target, duration = 500) {
   return display;
 }
 
-// SVG ring so the fill can genuinely animate (stroke-dashoffset transition)
-// rather than snapping like a CSS conic-gradient would.
 function ProgressRing({ percent, color, size = 58, stroke = 6 }) {
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
@@ -339,8 +403,12 @@ function ProgressRing({ percent, color, size = 58, stroke = 6 }) {
   );
 }
 
-
-function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, syncStatus, sessionTotals, navClass = "" }) {
+// ── TRAY SCREEN ─────────────────────────────────────────────────────────────────
+// Always mounted underneath the gym-form card. When a card is open, this
+// screen recedes: scales down, gains rounded corners, and dims — a sliver of
+// it stays visible above the card so the "stack" reads as one continuous
+// place, not two separate screens swapping out.
+function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, sessionTotals, recede }) {
   const doneCount = gyms.filter(g => completedToday.has(g)).length;
   const allDone = doneCount === gyms.length && gyms.length > 0;
   const remaining = gyms.length - doneCount;
@@ -352,12 +420,24 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
   const doneGyms = gyms.filter(g => completedToday.has(g));
 
   return (
-    <div className={navClass} style={{
+    <div style={{
       minHeight: "100vh", position: "relative", background: bgGradient,
       fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 40, overflowX: "hidden",
+      transform: recede ? "scale(0.93) translateY(-6px)" : "scale(1) translateY(0)",
+      borderRadius: recede ? 30 : 0,
+      overflow: recede ? "hidden" : "visible",
+      transition: "transform 0.42s cubic-bezier(0.32,0.72,0,1), border-radius 0.42s cubic-bezier(0.32,0.72,0,1)",
+      transformOrigin: "center top",
     }}>
-      <div style={{ position: "fixed", top: "-12%", left: "-10%", width: 380, height: 380, borderRadius: "50%", background: C.indigo, opacity: 0.14, filter: "blur(100px)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "-8%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.green, opacity: 0.12, filter: "blur(100px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", top: "-12%", left: "-10%", width: 380, height: 380, borderRadius: "50%", background: C.indigo, opacity: 0.12, filter: "blur(100px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-8%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.green, opacity: 0.10, filter: "blur(100px)", pointerEvents: "none" }} />
+
+      {/* Dimming scrim — fades in as the card lifts, so the receded tray
+          reads unambiguously as "behind", not just smaller. */}
+      <div style={{
+        position: "absolute", inset: 0, background: "rgba(20,20,30,0.16)",
+        opacity: recede ? 1 : 0, transition: "opacity 0.42s ease", pointerEvents: "none", zIndex: 5,
+      }} />
 
       {/* Header */}
       <div style={{ position: "relative", padding: `${safeTop} 18px 16px` }}>
@@ -373,25 +453,16 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
           </div>
           <button className="ff-btn" onClick={() => setConfirmingLogout(true)} aria-label="Keluar" style={{
             width: 40, height: 40, borderRadius: 13, border: "1px solid rgba(0,0,0,0.06)",
-            background: "rgba(255,255,255,0.65)", color: C.sub, cursor: "pointer", flexShrink: 0,
+            background: "rgba(255,255,255,0.7)", color: C.sub, cursor: "pointer", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}><LogOut size={17} strokeWidth={2} /></button>
         </div>
-
-        {syncStatus && (
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6, background: C.amberBg, color: C.amber,
-            padding: "7px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700,
-          }}>
-            <WifiOff size={13} strokeWidth={2.5} /> {syncStatus}
-          </div>
-        )}
       </div>
 
       {/* Progress banner */}
       <div style={{ padding: "0 18px 14px" }}>
         <div style={{
-          ...cardStyle(allDone ? C.green + "44" : C.indigo + "33"),
+          ...cardStyle(allDone ? C.green + "40" : C.indigo + "30"),
           borderRadius: 20, padding: "18px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ minWidth: 0 }}>
@@ -418,14 +489,14 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             TERKIRIM SESI INI
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div style={{ ...cardStyle(C.blue + "26"), borderRadius: 18, padding: "14px 16px" }}>
+            <div style={{ ...cardStyle(C.blue + "22"), borderRadius: 18, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <Package size={14} color={C.blue} strokeWidth={2.25} />
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: C.blue, letterSpacing: 0.3 }}>STOK</span>
               </div>
               <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{animatedStock}</div>
             </div>
-            <div style={{ ...cardStyle(C.orange + "26"), borderRadius: 18, padding: "14px 16px" }}>
+            <div style={{ ...cardStyle(C.orange + "22"), borderRadius: 18, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <RotateCcw size={14} color={C.orange} strokeWidth={2.25} />
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: C.orange, letterSpacing: 0.3 }}>SISA</span>
@@ -490,7 +561,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                 className="ff-card"
                 onClick={() => onSelectGym(gym)}
                 style={{
-                  ...cardStyle(C.green + "33"), background: C.greenBg,
+                  ...cardStyle(C.green + "30"), background: C.greenBg,
                   borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12,
                   cursor: "pointer", textAlign: "left", minWidth: 0,
                 }}>
@@ -525,10 +596,7 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
   );
 }
 
-// ── NUMBER FIELD (stok / sisa entry — no +/- steppers) ────────────────────────
-// Full-width, big-target field. Driver taps once to bring up the numeric
-// keypad and types the count directly; a clear "×" appears once a value is
-// entered so a mistake is one tap to fix instead of many decrements.
+// ── NUMBER FIELD ────────────────────────────────────────────────────────────────
 function NumberField({ label, value, onChange, color, colorBg, icon: Icon }) {
   const inputRef = useRef(null);
   const filled = value !== "";
@@ -577,8 +645,11 @@ function NumberField({ label, value, onChange, color, colorBg, icon: Icon }) {
   );
 }
 
-// ── GYM FORM ──────────────────────────────────────────────────────────────────
-function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navClass = "", gymAccent = C.indigo }) {
+// ── GYM FORM CARD ────────────────────────────────────────────────────────────────
+// Presented as a card lifted over the tray (see App's stack container for the
+// slide/scale choreography). The header here is a normal in-flow block — it
+// scrolls away with the rest of the form, it does not chase the viewport.
+function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, gymAccent = C.indigo }) {
   const [values, setValues] = useState(() => {
     const init = {};
     flavors.forEach(f => {
@@ -601,27 +672,20 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navC
   };
 
   return (
-    <div className={navClass} style={{
-      minHeight: "100vh", position: "relative", background: bgGradient,
-      fontFamily: FONT, letterSpacing: "-0.01em", paddingBottom: 140, overflowX: "hidden",
-    }}>
-      <div style={{ position: "fixed", top: "-12%", right: "-10%", width: 360, height: 360, borderRadius: "50%", background: C.indigo, opacity: 0.13, filter: "blur(100px)", pointerEvents: "none" }} />
+    <div style={{ paddingBottom: 140 }}>
+      {/* Drag-handle cue — signals "this is a card", purely visual. */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
+        <div style={{ width: 36, height: 4.5, borderRadius: 3, background: C.line }} />
+      </div>
 
-      {/* Sticky hero header — the gym stays big, colored, and pinned in
-          view the whole time you're filling flavors, so a driver scrolling
-          through a long list never loses track of which gym they're on. */}
-      <div style={{
-        position: "sticky", top: 0, zIndex: 20,
-        background: "rgba(241,240,248,0.82)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        borderBottom: `1px solid rgba(255,255,255,0.5)`,
-        padding: `${safeTop} 18px 16px`,
-      }}>
+      {/* Header — normal flow, scrolls with the page. */}
+      <div style={{ padding: `10px 18px 18px` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button
             className="ff-btn" onClick={handleBack} aria-label="Kembali"
             style={{
               width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)",
-              background: "rgba(255,255,255,0.75)", color: C.ink, cursor: "pointer", flexShrink: 0,
+              background: "rgba(255,255,255,0.8)", color: C.ink, cursor: "pointer", flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}><ChevronLeft size={20} strokeWidth={2.25} /></button>
 
@@ -629,7 +693,7 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navC
             width: 46, height: 46, borderRadius: 14, flexShrink: 0,
             background: gymAccent, color: "#fff", fontSize: 17, fontWeight: 800, letterSpacing: 0.2,
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: `0 6px 16px ${gymAccent}55`,
+            boxShadow: `0 6px 16px ${gymAccent}45`,
           }}>{gymInitials(gym)}</div>
 
           <div style={{ minWidth: 0 }}>
@@ -639,16 +703,13 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navC
         </div>
       </div>
 
-      <div style={{ height: 16 }} />
-
-      {/* Flavor cards — Stok and Sisa stacked full-width so nothing can
-          ever overflow the viewport, and each field gets a large tap target. */}
+      {/* Flavor cards */}
       <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 14 }}>
         {flavors.map((flavor) => {
           const filled = values[flavor].stock !== "" || values[flavor].waste !== "";
           return (
             <div key={flavor} style={{
-              ...cardStyle(filled ? C.indigo + "44" : "rgba(0,0,0,0.06)"),
+              ...cardStyle(filled ? C.indigo + "40" : "rgba(0,0,0,0.06)"),
               borderRadius: 20, padding: 18,
             }}>
               <div style={{ fontSize: 16.5, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{flavor}</div>
@@ -661,10 +722,11 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navC
         })}
       </div>
 
-      {/* Sticky bottom CTA */}
+      {/* Sticky bottom CTA — sticky to the card's own scroll container, not the
+          viewport, so it stays reachable without turning the header sticky too. */}
       <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, padding: `16px 18px ${safeBottom}`,
-        background: "linear-gradient(0deg, rgba(243,243,247,0.98) 60%, rgba(243,243,247,0))",
+        position: "sticky", bottom: 0, left: 0, right: 0, padding: `16px 18px ${safeBottom}`, marginTop: 20,
+        background: "linear-gradient(0deg, rgba(245,245,250,0.98) 60%, rgba(245,245,250,0))",
         backdropFilter: "blur(6px)",
       }}>
         <div style={{ fontSize: 12.5, color: C.mute, textAlign: "center", marginBottom: 10, fontWeight: 600 }}>
@@ -679,7 +741,7 @@ function GymFormScreen({ gym, flavors, initialData, onBack, onReviewSubmit, navC
             cursor: canReview ? "pointer" : "default",
             background: canReview ? C.indigo : "#D1D1D6",
             color: "#fff", fontSize: 17, fontWeight: 700,
-            boxShadow: canReview ? "0 6px 20px rgba(94,92,230,0.35)" : "none",
+            boxShadow: canReview ? "0 6px 20px rgba(94,92,230,0.32)" : "none",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
           Periksa & Kirim <ChevronRight size={19} strokeWidth={2.5} />
@@ -713,7 +775,7 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
   return (
     <div style={{
       position: "fixed", inset: 0, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100, fontFamily: FONT,
+      display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 150, fontFamily: FONT,
     }}>
       <div style={{
         width: "100%", maxWidth: 480, background: C.paper, borderRadius: "28px 28px 0 0",
@@ -798,7 +860,7 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
           <button className="ff-btn" onClick={onConfirm} disabled={submitting} style={{
             flex: 2, padding: "16px 16px", borderRadius: 16, border: "none",
             background: C.green, color: "#fff", fontSize: 15, fontWeight: 700, cursor: submitting ? "default" : "pointer",
-            boxShadow: "0 6px 20px rgba(52,199,89,0.35)", opacity: submitting ? 0.75 : 1,
+            boxShadow: "0 6px 20px rgba(47,174,96,0.32)", opacity: submitting ? 0.75 : 1,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
             {submitting ? (<><Loader2 size={16} className="ff-spin" /> Mengirim...</>) : (<><Check size={16} strokeWidth={2.5} /> Ya, Kirim Data</>)}
@@ -811,8 +873,6 @@ function ConfirmModal({ gym, flavors, values, onCancel, onConfirm, submitting })
 
 // ── SUCCESS OVERLAY ────────────────────────────────────────────────────────────
 function SuccessOverlay({ gym }) {
-  // Small fixed set of confetti dots, each with a random-ish outward
-  // direction baked in via CSS custom properties, staggered slightly.
   const confetti = [
     { color: C.indigo, dx: -70, dy: -46, delay: 0.05 },
     { color: C.green, dx: 66, dy: -52, delay: 0.09 },
@@ -824,7 +884,7 @@ function SuccessOverlay({ gym }) {
   return (
     <div style={{
       position: "fixed", inset: 0, background: "rgba(20,20,24,0.35)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, fontFamily: FONT, padding: 20,
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 250, fontFamily: FONT, padding: 20,
     }}>
       <div style={{
         position: "relative", background: C.paper, borderRadius: 26, padding: "36px 36px", textAlign: "center",
@@ -857,60 +917,59 @@ function SuccessOverlay({ gym }) {
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
+const CARD_TRANSITION_MS = 420;
+
 export default function App() {
   const [authToken, setAuthToken] = useState(null);
   const [driverName, setDriverName] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
 
-  const [gyms, setGyms] = useState(FALLBACK_GYMS);
-  const [flavors, setFlavors] = useState(FALLBACK_FLAVORS);
-  const [syncStatus, setSyncStatus] = useState("");
+  // 'syncing' | 'error' | 'ready' — no hardcoded gym/flavor lists ever render;
+  // the tray only mounts once the sheet has actually answered.
+  const [syncState, setSyncState] = useState("syncing");
+  const [retrying, setRetrying] = useState(false);
+  const [gyms, setGyms] = useState([]);
+  const [flavors, setFlavors] = useState([]);
+  const [completedToday, setCompletedToday] = useState(new Set());
 
-  const [screen, setScreen] = useState("tray");
-  const [navDirection, setNavDirection] = useState("fwd"); // "fwd" entering a gym, "back" returning to tray
+  // Card-stack navigation: activeGym mounts the form card; cardOpen drives
+  // the actual slide/scale transition. Closing animates first, then unmounts.
   const [activeGym, setActiveGym] = useState(null);
+  const [cardOpen, setCardOpen] = useState(false);
+  const closeTimerRef = useRef(null);
+
   const [pendingValues, setPendingValues] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  const [completedToday, setCompletedToday] = useState(new Set());
   const [savedValues, setSavedValues] = useState({});
 
-  const loadGymList = useCallback(async (token) => {
-    try {
-      const data = await callAppsScript({ action: "getGymList", token });
-      if (data.ok && Array.isArray(data.gyms) && data.gyms.length) {
-        setGyms(data.gyms);
-        setSyncStatus("");
-      } else {
-        setSyncStatus("Memakai daftar gym cadangan, sheet belum tersambung");
-      }
-    } catch {
-      setSyncStatus("Memakai daftar gym cadangan, sheet belum tersambung");
-    }
-  }, []);
+  useEffect(() => () => clearTimeout(closeTimerRef.current), []);
 
-  const loadFlavorList = useCallback(async (token) => {
+  const loadInitialData = useCallback(async (token) => {
+    setSyncState("syncing");
     try {
-      const data = await callAppsScript({ action: "getFlavorList", token });
-      if (data.ok && Array.isArray(data.flavors) && data.flavors.length) {
-        setFlavors(data.flavors);
-      }
-    } catch {
-      // silent fallback
-    }
-  }, []);
+      const [gymRes, flavorRes, statusRes] = await Promise.all([
+        callAppsScript({ action: "getGymList", token }),
+        callAppsScript({ action: "getFlavorList", token }),
+        callAppsScript({ action: "getTodayStatus", token, date: todayKey() }),
+      ]);
 
-  const loadCompletedToday = useCallback(async (token) => {
-    try {
-      const data = await callAppsScript({ action: "getTodayStatus", token, date: todayKey() });
-      if (data.ok && Array.isArray(data.completedGyms)) {
-        setCompletedToday(new Set(data.completedGyms));
+      const gymList = gymRes.ok && Array.isArray(gymRes.gyms) ? gymRes.gyms : [];
+      const flavorList = flavorRes.ok && Array.isArray(flavorRes.flavors) ? flavorRes.flavors : [];
+
+      if (!gymList.length || !flavorList.length) {
+        setSyncState("error");
+        return;
       }
+
+      setGyms(gymList);
+      setFlavors(flavorList);
+      setCompletedToday(statusRes.ok && Array.isArray(statusRes.completedGyms) ? new Set(statusRes.completedGyms) : new Set());
+      setSyncState("ready");
     } catch {
-      // silent
+      setSyncState("error");
     }
   }, []);
 
@@ -922,9 +981,7 @@ export default function App() {
       if (data.ok) {
         setAuthToken(data.token);
         setDriverName(data.driverName || "");
-        loadGymList(data.token);
-        loadFlavorList(data.token);
-        loadCompletedToday(data.token);
+        loadInitialData(data.token);
       } else {
         setLoginError(data.error || "PIN salah. Coba lagi.");
       }
@@ -933,20 +990,40 @@ export default function App() {
     } finally {
       setLoginLoading(false);
     }
-  }, [loadGymList, loadFlavorList, loadCompletedToday]);
+  }, [loadInitialData]);
+
+  const handleRetrySync = useCallback(async () => {
+    setRetrying(true);
+    await loadInitialData(authToken);
+    setRetrying(false);
+  }, [authToken, loadInitialData]);
 
   const handleLogout = () => {
     setAuthToken(null);
     setDriverName("");
+    setSyncState("syncing");
+    setGyms([]);
+    setFlavors([]);
     setCompletedToday(new Set());
     setSavedValues({});
-    setScreen("tray");
+    setActiveGym(null);
+    setCardOpen(false);
   };
 
   const handleSelectGym = (gym) => {
+    clearTimeout(closeTimerRef.current);
     setActiveGym(gym);
-    setNavDirection("fwd");
-    setScreen("form");
+    // Mount first, then flip to open on the next frame so the card actually
+    // transitions from "off bottom" to "in place" instead of snapping in.
+    requestAnimationFrame(() => requestAnimationFrame(() => setCardOpen(true)));
+  };
+
+  const handleCloseCard = () => {
+    setCardOpen(false);
+    closeTimerRef.current = setTimeout(() => {
+      setActiveGym(null);
+      setPendingValues(null);
+    }, CARD_TRANSITION_MS);
   };
 
   const handleReviewSubmit = (gym, values) => {
@@ -974,10 +1051,7 @@ export default function App() {
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        setNavDirection("back");
-        setScreen("tray");
-        setActiveGym(null);
-        setPendingValues(null);
+        handleCloseCard();
       }, 1300);
     } catch (err) {
       alert("Gagal mengirim data. Coba lagi. " + (err?.message || err));
@@ -1007,32 +1081,64 @@ export default function App() {
     );
   }
 
+  if (syncState === "syncing") {
+    return (
+      <>
+        <GlobalStyles />
+        <SyncingScreen driverName={driverName} />
+      </>
+    );
+  }
+
+  if (syncState === "error") {
+    return (
+      <>
+        <GlobalStyles />
+        <SyncErrorScreen onRetry={handleRetrySync} retrying={retrying} />
+      </>
+    );
+  }
+
   return (
     <>
       <GlobalStyles />
-      {screen === "tray" && (
-        <TrayScreen
-          gyms={gyms}
-          completedToday={completedToday}
-          onSelectGym={handleSelectGym}
-          driverName={driverName}
-          onLogout={handleLogout}
-          syncStatus={syncStatus}
-          sessionTotals={sessionTotals}
-          navClass={navDirection === "back" ? "ff-screen-back" : ""}
-        />
+
+      <TrayScreen
+        gyms={gyms}
+        completedToday={completedToday}
+        onSelectGym={handleSelectGym}
+        driverName={driverName}
+        onLogout={handleLogout}
+        sessionTotals={sessionTotals}
+        recede={!!activeGym}
+      />
+
+      {/* Card-stack overlay: fixed sheet that slides up from below the
+          viewport and settles with a small gap at the top, revealing the
+          receded tray peeking behind it. Closing reverses the same motion,
+          so "back" always returns to exactly where the card came from. */}
+      {activeGym && (
+        <div
+          style={{
+            position: "fixed", top: 14, left: 0, right: 0, bottom: 0, zIndex: 50,
+            borderRadius: "28px 28px 0 0", overflow: "hidden", overflowY: "auto",
+            background: bgGradient,
+            boxShadow: "0 -8px 40px rgba(20,20,30,0.22)",
+            transform: cardOpen ? "translateY(0)" : "translateY(100%)",
+            transition: `transform ${CARD_TRANSITION_MS}ms cubic-bezier(0.32,0.72,0,1)`,
+          }}
+        >
+          <GymFormScreen
+            gym={activeGym}
+            flavors={flavors}
+            initialData={savedValues[activeGym]}
+            onBack={handleCloseCard}
+            onReviewSubmit={handleReviewSubmit}
+            gymAccent={accentFor(gyms.indexOf(activeGym))}
+          />
+        </div>
       )}
-      {screen === "form" && activeGym && (
-        <GymFormScreen
-          gym={activeGym}
-          flavors={flavors}
-          initialData={savedValues[activeGym]}
-          onBack={() => { setNavDirection("back"); setScreen("tray"); setActiveGym(null); }}
-          onReviewSubmit={handleReviewSubmit}
-          navClass="ff-screen-fwd"
-          gymAccent={accentFor(gyms.indexOf(activeGym))}
-        />
-      )}
+
       {showConfirm && pendingValues && (
         <ConfirmModal
           gym={activeGym}
