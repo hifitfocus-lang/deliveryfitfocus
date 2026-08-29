@@ -327,22 +327,32 @@ function SyncingScreen({ driverName }) {
 }
 
 // ── SYNC ERROR SCREEN (blocking) ───────────────────────────────────────────────
-function SyncErrorScreen({ onRetry, retrying }) {
+// Shows the raw diagnostic (which action failed, and why) instead of a vague
+// message — this screen is for you as the operator to debug the sheet
+// connection, not a polished customer-facing empty state.
+function SyncErrorScreen({ onRetry, retrying, detail }) {
   return (
     <div style={{
       minHeight: "100vh", position: "relative", background: bgGradient,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
       fontFamily: FONT, letterSpacing: "-0.01em",
     }}>
-      <div style={{ ...cardStyle(), borderRadius: 28, padding: "36px 26px", width: "100%", maxWidth: 360, textAlign: "center" }}>
+      <div style={{ ...cardStyle(), borderRadius: 28, padding: "36px 26px", width: "100%", maxWidth: 380, textAlign: "center" }}>
         <div style={{
           width: 60, height: 60, borderRadius: "50%", background: C.redBg,
           display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
         }}><CloudOff size={27} color={C.red} strokeWidth={2} /></div>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 8 }}>Gagal memuat daftar gym</div>
-        <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.5, margin: "0 0 24px" }}>
+        <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.5, margin: "0 0 16px" }}>
           Tidak bisa menyambung ke sheet. Periksa koneksi internet kamu, lalu coba lagi.
         </p>
+        {detail && (
+          <div style={{
+            textAlign: "left", background: C.redBg, color: C.red, borderRadius: 12,
+            padding: "10px 12px", marginBottom: 20, fontSize: 12, fontFamily: "ui-monospace,monospace",
+            wordBreak: "break-word", lineHeight: 1.5,
+          }}>{detail}</div>
+        )}
         <button className="ff-btn" onClick={onRetry} disabled={retrying} style={{
           width: "100%", padding: "15px 16px", borderRadius: 15, border: "none",
           background: C.indigo, color: "#fff", fontSize: 15, fontWeight: 700,
@@ -928,6 +938,7 @@ export default function App() {
   // 'syncing' | 'error' | 'ready' — no hardcoded gym/flavor lists ever render;
   // the tray only mounts once the sheet has actually answered.
   const [syncState, setSyncState] = useState("syncing");
+  const [syncErrorDetail, setSyncErrorDetail] = useState("");
   const [retrying, setRetrying] = useState(false);
   const [gyms, setGyms] = useState([]);
   const [flavors, setFlavors] = useState([]);
@@ -949,38 +960,57 @@ export default function App() {
 
   const loadInitialData = useCallback(async (token) => {
     setSyncState("syncing");
-    try {
-      // Gym list and flavor list are the essential data — the tray can't
-      // render without them, so a failure here blocks with a retry screen.
-      const [gymRes, flavorRes] = await Promise.all([
-        callAppsScript({ action: "getGymList", token }),
-        callAppsScript({ action: "getFlavorList", token }),
-      ]);
+    setSyncErrorDetail("");
 
-      const gymList = gymRes.ok && Array.isArray(gymRes.gyms) ? gymRes.gyms : [];
-      const flavorList = flavorRes.ok && Array.isArray(flavorRes.flavors) ? flavorRes.flavors : [];
-
-      if (!gymList.length || !flavorList.length) {
-        setSyncState("error");
-        return;
-      }
-
-      setGyms(gymList);
-      setFlavors(flavorList);
-      setSyncState("ready");
-
-      // Today's completion status is non-essential — if this call is slow,
-      // unimplemented, or errors, it should never block the tray from
-      // showing. Fetched separately so it can't drag down the required load.
+    // Each required call is caught individually so a failure names exactly
+    // which action broke and why, instead of one opaque "sync failed".
+    const fetchNamed = async (name, payload) => {
       try {
-        const statusRes = await callAppsScript({ action: "getTodayStatus", token, date: todayKey() });
-        setCompletedToday(statusRes.ok && Array.isArray(statusRes.completedGyms) ? new Set(statusRes.completedGyms) : new Set());
-      } catch {
-        setCompletedToday(new Set());
+        const res = await callAppsScript(payload);
+        return { name, res, error: null };
+      } catch (err) {
+        return { name, res: null, error: err?.message || String(err) };
       }
-    } catch (err) {
-      console.error("FitFocus sync failed:", err);
+    };
+
+    const [gymOut, flavorOut] = await Promise.all([
+      fetchNamed("getGymList", { action: "getGymList", token }),
+      fetchNamed("getFlavorList", { action: "getFlavorList", token }),
+    ]);
+
+    const problems = [];
+    for (const out of [gymOut, flavorOut]) {
+      if (out.error) {
+        problems.push(`${out.name}: request failed — ${out.error}`);
+      } else if (out.res?.ok === false) {
+        problems.push(`${out.name}: ${out.res.error || "server returned ok:false"}`);
+      } else if (out.res?.ok === undefined) {
+        problems.push(`${out.name}: unexpected response shape — ${JSON.stringify(out.res).slice(0, 160)}`);
+      }
+    }
+
+    const gymList = gymOut.res?.ok && Array.isArray(gymOut.res.gyms) ? gymOut.res.gyms : [];
+    const flavorList = flavorOut.res?.ok && Array.isArray(flavorOut.res.flavors) ? flavorOut.res.flavors : [];
+    if (!gymOut.error && gymOut.res?.ok && !gymList.length) problems.push("getGymList: responded ok, but the gyms array was empty");
+    if (!flavorOut.error && flavorOut.res?.ok && !flavorList.length) problems.push("getFlavorList: responded ok, but the flavors array was empty");
+
+    if (!gymList.length || !flavorList.length) {
+      console.error("FitFocus sync failed:", problems);
+      setSyncErrorDetail(problems.join("\n"));
       setSyncState("error");
+      return;
+    }
+
+    setGyms(gymList);
+    setFlavors(flavorList);
+    setSyncState("ready");
+
+    // Today's completion status is non-essential — never blocks the tray.
+    try {
+      const statusRes = await callAppsScript({ action: "getTodayStatus", token, date: todayKey() });
+      setCompletedToday(statusRes.ok && Array.isArray(statusRes.completedGyms) ? new Set(statusRes.completedGyms) : new Set());
+    } catch {
+      setCompletedToday(new Set());
     }
   }, []);
 
@@ -1105,7 +1135,7 @@ export default function App() {
     return (
       <>
         <GlobalStyles />
-        <SyncErrorScreen onRetry={handleRetrySync} retrying={retrying} />
+        <SyncErrorScreen onRetry={handleRetrySync} retrying={retrying} detail={syncErrorDetail} />
       </>
     );
   }
