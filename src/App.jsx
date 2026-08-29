@@ -473,15 +473,6 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             display: "flex", alignItems: "center", justifyContent: "center",
           }}><LogOut size={17} strokeWidth={2} /></button>
         </div>
-
-        {warning && (
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6, background: C.amberBg, color: C.amber,
-            padding: "7px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700,
-          }}>
-            <CloudOff size={13} strokeWidth={2.5} /> {warning}
-          </div>
-        )}
       </div>
 
       {/* Progress banner */}
@@ -548,23 +539,42 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                   className="ff-card"
                   onClick={() => onSelectGym(gym)}
                   style={{
-                    position: "relative", ...cardStyle(),
-                    borderTop: `4px solid ${accent}`,
-                    borderRadius: 20, padding: "20px 12px 18px", minHeight: 124, minWidth: 0,
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", textAlign: "center",
+                    position: "relative", textAlign: "left", cursor: "pointer",
+                    minHeight: 150, minWidth: 0, padding: "16px 14px 14px",
+                    borderRadius: 22, border: "1px solid rgba(20,20,30,0.05)",
+                    background: `radial-gradient(120% 100% at 0% 0%, ${accent}14 0%, #FFFFFF 55%)`,
+                    boxShadow: "0 1px 2px rgba(20,20,30,0.04), 0 10px 22px -14px rgba(30,30,50,0.28)",
+                    display: "flex", flexDirection: "column",
                     animation: "ffPop 0.3s ease backwards", animationDelay: `${idx * 0.04}s`,
                   }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                      background: `linear-gradient(145deg, ${accent}, ${accent}CC)`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13.5, fontWeight: 800, color: "#fff", letterSpacing: 0.2,
+                      boxShadow: `0 6px 14px ${accent}4D`,
+                    }}>{gymInitials(gym)}</div>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: C.faint, letterSpacing: 0.6, fontVariantNumeric: "tabular-nums", marginTop: 3 }}>
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+
                   <div style={{
-                    width: 34, height: 34, borderRadius: 10, background: accent,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, fontWeight: 800, color: "#fff", marginBottom: 8, letterSpacing: 0.2,
-                  }}>{gymInitials(gym)}</div>
-                  <div style={{ fontSize: 14.5, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
+                    fontSize: 15, fontWeight: 800, color: C.ink, lineHeight: 1.22, letterSpacing: "-0.01em",
+                    marginTop: 14, marginBottom: 2,
+                    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                  }}>
                     {gymShortName(gym)}
                   </div>
-                  <div style={{ fontSize: 11.5, color: C.mute, marginTop: 4, display: "flex", alignItems: "center", gap: 2, fontWeight: 600 }}>
-                    Ketuk untuk isi <ChevronRight size={12} strokeWidth={2.5} />
+
+                  <div style={{ flex: 1 }} />
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                    <span style={{
+                      width: 26, height: 26, borderRadius: "50%", background: `${accent}17`, color: accent,
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}><ChevronRight size={13} strokeWidth={2.75} /></span>
                   </div>
                 </button>
               );
@@ -586,21 +596,42 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
                 className="ff-card"
                 onClick={() => onSelectGym(gym)}
                 style={{
-                  ...cardStyle(C.green + "30"), background: C.greenBg,
-                  borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12,
-                  cursor: "pointer", textAlign: "left", minWidth: 0,
+                  position: "relative", cursor: "pointer", textAlign: "left", minWidth: 0,
+                  padding: "13px 16px 13px 14px", borderRadius: 16,
+                  border: "1px solid rgba(20,20,30,0.05)", borderLeft: `3px solid ${C.green}`,
+                  background: "#fff", boxShadow: "0 1px 2px rgba(20,20,30,0.03)",
+                  display: "flex", alignItems: "center", gap: 12,
                 }}>
                 <div style={{
-                  width: 28, height: 28, borderRadius: "50%", background: C.green, color: "#fff",
+                  width: 26, height: 26, borderRadius: "50%", background: C.greenBg, color: C.green,
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}><Check size={15} strokeWidth={3} /></div>
+                }}><Check size={14} strokeWidth={3} /></div>
                 <span style={{ fontSize: 14, fontWeight: 700, color: C.ink, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gymShortName(gym)}</span>
                 <span style={{
-                  display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: C.green, fontWeight: 700,
-                  background: "#fff", padding: "6px 11px", borderRadius: 999, flexShrink: 0,
-                }}><Pencil size={11} strokeWidth={2.5} /> Ubah</span>
+                  display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: C.sub, fontWeight: 700,
+                  background: C.bg, padding: "6px 10px", borderRadius: 999, flexShrink: 0,
+                }}><Pencil size={10} strokeWidth={2.5} /> Ubah</span>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sync warning — a quiet floating toast, not a top banner. Fades out
+          while a form card is open so it never competes with the stack. */}
+      {warning && (
+        <div style={{
+          position: "fixed", left: 0, right: 0, bottom: `max(16px, env(safe-area-inset-bottom))`,
+          display: "flex", justifyContent: "center", zIndex: 8,
+          opacity: recede ? 0 : 1, transition: "opacity 0.25s ease", pointerEvents: "none",
+        }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "rgba(28,28,30,0.88)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+            color: "rgba(255,255,255,0.92)", padding: "8px 14px", borderRadius: 999,
+            fontSize: 11.5, fontWeight: 600, boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
+          }}>
+            <CloudOff size={12} strokeWidth={2.5} color="rgba(255,255,255,0.7)" /> {warning}
           </div>
         </div>
       )}
@@ -1015,7 +1046,7 @@ export default function App() {
     if (flavorOut.error || flavorOut.res?.ok === false || !flavorList.length) {
       console.warn("FitFocus: getFlavorList unavailable, using fallback flavors —", flavorOut.error || flavorOut.res);
       setFlavors(FALLBACK_FLAVORS);
-      setSyncWarning("Pakai daftar rasa cadangan — getFlavorList belum ada di Apps Script");
+      setSyncWarning("Backup flavor list in use");
     } else {
       setFlavors(flavorList);
     }
