@@ -950,10 +950,11 @@ export default function App() {
   const loadInitialData = useCallback(async (token) => {
     setSyncState("syncing");
     try {
-      const [gymRes, flavorRes, statusRes] = await Promise.all([
+      // Gym list and flavor list are the essential data — the tray can't
+      // render without them, so a failure here blocks with a retry screen.
+      const [gymRes, flavorRes] = await Promise.all([
         callAppsScript({ action: "getGymList", token }),
         callAppsScript({ action: "getFlavorList", token }),
-        callAppsScript({ action: "getTodayStatus", token, date: todayKey() }),
       ]);
 
       const gymList = gymRes.ok && Array.isArray(gymRes.gyms) ? gymRes.gyms : [];
@@ -966,9 +967,19 @@ export default function App() {
 
       setGyms(gymList);
       setFlavors(flavorList);
-      setCompletedToday(statusRes.ok && Array.isArray(statusRes.completedGyms) ? new Set(statusRes.completedGyms) : new Set());
       setSyncState("ready");
-    } catch {
+
+      // Today's completion status is non-essential — if this call is slow,
+      // unimplemented, or errors, it should never block the tray from
+      // showing. Fetched separately so it can't drag down the required load.
+      try {
+        const statusRes = await callAppsScript({ action: "getTodayStatus", token, date: todayKey() });
+        setCompletedToday(statusRes.ok && Array.isArray(statusRes.completedGyms) ? new Set(statusRes.completedGyms) : new Set());
+      } catch {
+        setCompletedToday(new Set());
+      }
+    } catch (err) {
+      console.error("FitFocus sync failed:", err);
       setSyncState("error");
     }
   }, []);
