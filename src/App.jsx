@@ -27,6 +27,12 @@ const CloudOff = makeIcon(<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjae8ljZwXp3pdcxqV5B-MhiQc3PCwEAvf2MMYV29E0qMprWulUZwa4dlCpMZJ9tkc/exec";
 
+// Temporary — getFlavorList isn't implemented in Apps Script yet. Unlike the
+// old fallback, this one is never silent: TrayScreen shows a visible banner
+// whenever it's active, so it can't quietly mask a real problem again.
+// Remove this once getFlavorList is added to the backend.
+const FALLBACK_FLAVORS = ["Choco Forest", "Red Velvet", "Pink Banana", "Mixed Berry"];
+
 async function callAppsScript(payload) {
   const params = new URLSearchParams();
   Object.entries(payload).forEach(([key, value]) => {
@@ -418,7 +424,7 @@ function ProgressRing({ percent, color, size = 58, stroke = 6 }) {
 // screen recedes: scales down, gains rounded corners, and dims — a sliver of
 // it stays visible above the card so the "stack" reads as one continuous
 // place, not two separate screens swapping out.
-function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, sessionTotals, recede }) {
+function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, sessionTotals, recede, warning }) {
   const doneCount = gyms.filter(g => completedToday.has(g)).length;
   const allDone = doneCount === gyms.length && gyms.length > 0;
   const remaining = gyms.length - doneCount;
@@ -467,6 +473,15 @@ function TrayScreen({ gyms, completedToday, onSelectGym, driverName, onLogout, s
             display: "flex", alignItems: "center", justifyContent: "center",
           }}><LogOut size={17} strokeWidth={2} /></button>
         </div>
+
+        {warning && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6, background: C.amberBg, color: C.amber,
+            padding: "7px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700,
+          }}>
+            <CloudOff size={13} strokeWidth={2.5} /> {warning}
+          </div>
+        )}
       </div>
 
       {/* Progress banner */}
@@ -939,6 +954,7 @@ export default function App() {
   // the tray only mounts once the sheet has actually answered.
   const [syncState, setSyncState] = useState("syncing");
   const [syncErrorDetail, setSyncErrorDetail] = useState("");
+  const [syncWarning, setSyncWarning] = useState("");
   const [retrying, setRetrying] = useState(false);
   const [gyms, setGyms] = useState([]);
   const [flavors, setFlavors] = useState([]);
@@ -961,9 +977,8 @@ export default function App() {
   const loadInitialData = useCallback(async (token) => {
     setSyncState("syncing");
     setSyncErrorDetail("");
+    setSyncWarning("");
 
-    // Each required call is caught individually so a failure names exactly
-    // which action broke and why, instead of one opaque "sync failed".
     const fetchNamed = async (name, payload) => {
       try {
         const res = await callAppsScript(payload);
@@ -978,31 +993,34 @@ export default function App() {
       fetchNamed("getFlavorList", { action: "getFlavorList", token }),
     ]);
 
-    const problems = [];
-    for (const out of [gymOut, flavorOut]) {
-      if (out.error) {
-        problems.push(`${out.name}: request failed — ${out.error}`);
-      } else if (out.res?.ok === false) {
-        problems.push(`${out.name}: ${out.res.error || "server returned ok:false"}`);
-      } else if (out.res?.ok === undefined) {
-        problems.push(`${out.name}: unexpected response shape — ${JSON.stringify(out.res).slice(0, 160)}`);
-      }
-    }
-
+    // Gym list is essential — the tray can't render without it, so a
+    // failure here still blocks with the diagnostic retry screen.
     const gymList = gymOut.res?.ok && Array.isArray(gymOut.res.gyms) ? gymOut.res.gyms : [];
-    const flavorList = flavorOut.res?.ok && Array.isArray(flavorOut.res.flavors) ? flavorOut.res.flavors : [];
-    if (!gymOut.error && gymOut.res?.ok && !gymList.length) problems.push("getGymList: responded ok, but the gyms array was empty");
-    if (!flavorOut.error && flavorOut.res?.ok && !flavorList.length) problems.push("getFlavorList: responded ok, but the flavors array was empty");
-
-    if (!gymList.length || !flavorList.length) {
-      console.error("FitFocus sync failed:", problems);
-      setSyncErrorDetail(problems.join("\n"));
+    if (gymOut.error || gymOut.res?.ok === false || !gymList.length) {
+      const detail = gymOut.error
+        ? `getGymList: request failed — ${gymOut.error}`
+        : gymOut.res?.ok === false
+          ? `getGymList: ${gymOut.res.error || "server returned ok:false"}`
+          : "getGymList: responded ok, but the gyms array was empty";
+      console.error("FitFocus sync failed:", detail);
+      setSyncErrorDetail(detail);
       setSyncState("error");
       return;
     }
 
+    // Flavor list falls back temporarily until getFlavorList exists in Apps
+    // Script — but never silently. A banner stays visible on the tray so
+    // this can't get forgotten the way the old fallback did.
+    const flavorList = flavorOut.res?.ok && Array.isArray(flavorOut.res.flavors) ? flavorOut.res.flavors : [];
+    if (flavorOut.error || flavorOut.res?.ok === false || !flavorList.length) {
+      console.warn("FitFocus: getFlavorList unavailable, using fallback flavors —", flavorOut.error || flavorOut.res);
+      setFlavors(FALLBACK_FLAVORS);
+      setSyncWarning("Pakai daftar rasa cadangan — getFlavorList belum ada di Apps Script");
+    } else {
+      setFlavors(flavorList);
+    }
+
     setGyms(gymList);
-    setFlavors(flavorList);
     setSyncState("ready");
 
     // Today's completion status is non-essential — never blocks the tray.
@@ -1152,6 +1170,7 @@ export default function App() {
         onLogout={handleLogout}
         sessionTotals={sessionTotals}
         recede={!!activeGym}
+        warning={syncWarning}
       />
 
       {/* Card-stack overlay: fixed sheet that slides up from below the
